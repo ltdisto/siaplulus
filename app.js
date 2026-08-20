@@ -348,6 +348,18 @@ function waitForCameraVideoThenHideOverlay() {
         }
         sudahSelesai = true;
         console.log('[AR-DEBUG] selesaikan() FIRE. berhasil=', berhasil, 'alasan=', alasan, 'setelah', Date.now() - startTime, 'ms,', jumlahCek, 'kali cek');
+
+        // Resize paksa SEKALI LAGI tepat di titik ini — saat video benar-benar
+        // terkonfirmasi aktif, momen paling tepat untuk pastikan canvas ikut
+        // menyesuaikan ukuran (bukan lagi 0x0).
+        const sceneElNow = document.querySelector('#ar-scene');
+        if (sceneElNow) {
+            const canvasEl = sceneElNow.querySelector('canvas.a-canvas');
+            console.log('[AR-DEBUG] canvas saat selesaikan():', canvasEl ? `${canvasEl.width}x${canvasEl.height}` : 'tidak ditemukan');
+            if (typeof sceneElNow.resize === 'function') sceneElNow.resize();
+            window.dispatchEvent(new Event('resize'));
+        }
+
         hideArLoadingOverlay();
         if (berhasil) {
             if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
@@ -460,6 +472,27 @@ function mulaiAssesmen() {
                         console.log('[AR-DEBUG] memanggil sys.start()...');
                         sys.start();
                         console.log('[AR-DEBUG] sys.start() selesai dipanggil (async internal jalan di background)');
+
+                        // FIX PENTING: karena <a-scene> disuntikkan secara dinamis
+                        // (bukan ada sejak halaman dimuat), A-Frame kadang salah
+                        // menghitung ukuran <canvas> jadi 0x0 (race condition saat
+                        // renderer pertama kali dibuat, window belum "dianggap siap").
+                        // Paksa hitung ulang beberapa kali sebagai jaring pengaman.
+                        const paksaResizeCanvas = () => {
+                            const canvasEl = sceneEl.querySelector('canvas.a-canvas');
+                            console.log('[AR-DEBUG] paksaResizeCanvas() canvas width/height SEBELUM:',
+                                canvasEl ? canvasEl.width : null, canvasEl ? canvasEl.height : null);
+                            if (typeof sceneEl.resize === 'function') {
+                                sceneEl.resize();
+                            }
+                            window.dispatchEvent(new Event('resize'));
+                            console.log('[AR-DEBUG] paksaResizeCanvas() canvas width/height SESUDAH:',
+                                canvasEl ? canvasEl.width : null, canvasEl ? canvasEl.height : null);
+                        };
+                        paksaResizeCanvas();
+                        setTimeout(paksaResizeCanvas, 300);
+                        setTimeout(paksaResizeCanvas, 1000);
+
                         waitForCameraVideoThenHideOverlay();
                     } catch (startErr) {
                         console.error('Gagal memulai kamera AR:', startErr);
