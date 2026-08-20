@@ -307,6 +307,16 @@
 
     <!-- 3. LAYAR AR (KAMERA & SCAN MARKER -> GAMBAR AR 3D + AUDIO) -->
     <div id="ar-screen" class="screen">
+        <!-- Overlay loading: tampil FULL SCREEN menutupi apa pun di baliknya
+             (termasuk canvas AR yang masih kosong/putih saat baru diinisialisasi)
+             selama model 3D + audio + soal belum semuanya benar-benar siap.
+             Kamera BARU diminta setelah overlay ini ditutup. -->
+        <div id="ar-loading-overlay" class="ar-loading-overlay">
+            <div class="ar-loading-spinner"></div>
+            <p class="ar-loading-text" id="arLoadingText">Menyiapkan asesmen...</p>
+            <p class="ar-loading-subtext" id="arLoadingSubtext">Memuat data soal dari server</p>
+        </div>
+
         <div id="scan-hint" class="scan-hint">Arahkan kamera ke salah satu kartu marker (1-8)...</div>
         <div id="progress-hint" class="scan-hint" style="top:45px; font-size:12px;">Terjawab: 0/8</div>
         <button type="button" id="ar-next-btn" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); width:auto; padding:14px 40px; z-index:15;">Next</button>

@@ -305,6 +305,23 @@ function getArSystem() {
 }
 
 // ================= MULAI ASESMEN =================
+function setArLoadingText(mainText, subText) {
+    const t = document.getElementById('arLoadingText');
+    const s = document.getElementById('arLoadingSubtext');
+    if (t && mainText) t.textContent = mainText;
+    if (s && subText !== undefined) s.textContent = subText;
+}
+
+function showArLoadingOverlay() {
+    const overlay = document.getElementById('ar-loading-overlay');
+    if (overlay) overlay.classList.remove('ar-loading-hidden');
+}
+
+function hideArLoadingOverlay() {
+    const overlay = document.getElementById('ar-loading-overlay');
+    if (overlay) overlay.classList.add('ar-loading-hidden');
+}
+
 function mulaiAssesmen() {
     const siswa = getSiswaData();
     if (!siswa.nama) {
@@ -313,9 +330,9 @@ function mulaiAssesmen() {
         return;
     }
 
-    const arScreenLoadingMsg = document.getElementById('scan-hint');
-    if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Memuat soal terbaru...';
     switchScreen('ar-screen');
+    showArLoadingOverlay();
+    setArLoadingText('Menyiapkan asesmen...', 'Memuat data soal dari server');
 
     loadSoalFromServer()
         .then(() => {
@@ -330,32 +347,50 @@ function mulaiAssesmen() {
             }
 
             updateProgressHint();
-            if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Memuat model 3D & memulai kamera...';
+            setArLoadingText('Menyiapkan asesmen...', 'Memuat model 3D & audio (0/16)...');
 
             injectArSceneIfNeeded();
 
             const sceneEl = document.querySelector('#ar-scene');
             sceneEl.style.display = '';
 
-            // PENTING: JANGAN start() hanya karena getArSystem() sudah mengembalikan
-            // objek non-null — objek "system" bisa saja sudah ADA tapi state
-            // internalnya (mis. this.ui) belum sepenuhnya siap, menyebabkan error
-            // "Cannot read properties of undefined (reading 'showLoading')".
-            // Satu-satunya sinyal yang benar-benar aman adalah event 'loaded' resmi
-            // dari A-Frame (menandakan scene + semua <a-assets> selesai diproses),
-            // atau properti sceneEl.hasLoaded kalau event itu sudah lewat duluan.
+            // Pantau progres <a-assets> (16 item: 8 model .glb + 8 audio) supaya
+            // siswa lihat progres nyata, bukan cuma teks statis tanpa kepastian.
+            const assetsEl = sceneEl.querySelector('a-assets');
+            if (assetsEl) {
+                assetsEl.addEventListener('progress', (e) => {
+                    const loaded = e.detail && e.detail.loadedCount != null ? e.detail.loadedCount : '?';
+                    const total = e.detail && e.detail.totalCount != null ? e.detail.totalCount : 16;
+                    setArLoadingText('Menyiapkan asesmen...', `Memuat model 3D & audio (${loaded}/${total})...`);
+                });
+                assetsEl.addEventListener('timeout', () => {
+                    console.warn('[AR] Sebagian aset melebihi batas waktu, tapi tetap dilanjutkan.');
+                });
+            }
+
+            // PENTING: kamera BARU diminta (lewat sys.start()) SETELAH event 'loaded'
+            // resmi dari A-Frame — menandakan scene + SEMUA <a-assets> (model 3D +
+            // audio) benar-benar selesai diproses. Overlay loading di atas menutupi
+            // layar sepenuhnya selama ini, sehingga siswa tidak melihat layar
+            // putih/kosong saat proses download+decode berlangsung.
             const startWhenReady = () => {
+                setArLoadingText('Membuka kamera...', 'Mohon izinkan akses kamera saat diminta');
                 const sys = getArSystem();
                 if (sys) {
                     try {
                         sys.start();
-                        if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+                        setTimeout(() => {
+                            hideArLoadingOverlay();
+                            const scanHint = document.getElementById('scan-hint');
+                            if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+                        }, 400); // jeda singkat supaya video kamera sempat tampil dulu sebelum overlay hilang
                     } catch (startErr) {
                         console.error('Gagal memulai kamera AR:', startErr);
-                        if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Gagal memulai kamera. Coba refresh halaman.';
+                        setArLoadingText('Gagal memulai kamera', 'Coba refresh halaman, lalu ulangi.');
                     }
                 } else {
                     console.error('Sistem mindar-image-system tidak ditemukan setelah scene loaded.');
+                    setArLoadingText('Gagal memuat AR', 'Coba refresh halaman, lalu ulangi.');
                 }
             };
 
@@ -367,6 +402,7 @@ function mulaiAssesmen() {
         })
         .catch(err => {
             console.error('Gagal memuat soal / memulai asesmen:', err);
+            hideArLoadingOverlay();
             alert('Gagal memuat halaman asesmen. Cek koneksi internet, lalu coba lagi.');
             switchScreen('main-menu');
         });
