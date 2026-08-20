@@ -361,13 +361,47 @@ function waitForCameraVideoThenHideOverlay() {
             console.log('[AR-DEBUG] canvas saat selesaikan() SEBELUM cek:', wSebelum, 'x', hSebelum);
 
             if (canvasEl && (canvasEl.width === 0 || canvasEl.height === 0)) {
-                console.log('[AR-DEBUG] canvas terbukti 0, mencoba resize()...');
+                console.log('[AR-DEBUG] canvas terbukti 0, coba sceneEl.resize() dulu...');
                 if (typeof sceneElNow.resize === 'function') sceneElNow.resize();
                 window.dispatchEvent(new Event('resize'));
-                console.log('[AR-DEBUG] canvas SESUDAH resize():', canvasEl.width, 'x', canvasEl.height);
+                console.log('[AR-DEBUG] canvas SESUDAH sceneEl.resize():', canvasEl.width, 'x', canvasEl.height);
+
+                // sceneEl.resize() terbukti kadang tidak mempan. Kalau masih 0,
+                // langsung akses THREE.js renderer-nya dan paksa setSize() manual
+                // (melewati resize() bawaan A-Frame yang tidak bisa diandalkan).
+                if (canvasEl.width === 0 || canvasEl.height === 0) {
+                    console.log('[AR-DEBUG] masih 0, coba akses sceneElNow.renderer langsung...');
+                    const renderer = sceneElNow.renderer;
+                    console.log('[AR-DEBUG] sceneElNow.renderer ada?', !!renderer);
+                    if (renderer && typeof renderer.setSize === 'function') {
+                        const w = window.innerWidth;
+                        const h = window.innerHeight;
+                        renderer.setSize(w, h, true);
+                        console.log('[AR-DEBUG] canvas SESUDAH renderer.setSize(' + w + ',' + h + '):', canvasEl.width, 'x', canvasEl.height);
+                    } else {
+                        // Jaring pengaman terakhir: set atribut width/height canvas
+                        // secara manual langsung, kalau renderer THREE.js pun tidak
+                        // bisa diakses untuk alasan apa pun.
+                        const w = window.innerWidth;
+                        const h = window.innerHeight;
+                        const dpr = window.devicePixelRatio || 1;
+                        canvasEl.width = w * dpr;
+                        canvasEl.height = h * dpr;
+                        canvasEl.style.width = w + 'px';
+                        canvasEl.style.height = h + 'px';
+                        console.log('[AR-DEBUG] canvas SESUDAH set manual width/height:', canvasEl.width, 'x', canvasEl.height);
+                    }
+                }
             } else {
                 console.log('[AR-DEBUG] canvas sudah punya ukuran valid, TIDAK perlu resize.');
             }
+
+            // Cek susulan 500ms kemudian — kalau-kalau ada proses lain (mis. MindAR
+            // sendiri) yang menimpa balik ukuran canvas jadi 0 setelah kita perbaiki.
+            setTimeout(() => {
+                console.log('[AR-DEBUG] cek susulan 500ms setelah selesaikan(): canvas =',
+                    canvasEl.width, 'x', canvasEl.height);
+            }, 500);
         }
 
         hideArLoadingOverlay();
