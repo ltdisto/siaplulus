@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiapLulus | Platform Delapan Dimensi Profil Lulusan</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+</head>
+<body>
+
+    <!-- SPLASH SCREEN (opening: auto 5 detik ATAU tombol Next, mana lebih dulu) -->
+    <div id="splash-screen" class="screen active">
+        <div id="splashContent" class="splash-content">
+            <div class="splash-top">
+                <h1 class="splash-welcome">Selamat Datang</h1>
+                <div class="splash-logos">
+                    <img src="logo-siaplulus.png" alt="Logo SiapLulus" class="splash-logo" />
+                    <img src="logo-uny.png" alt="Logo Universitas Negeri Yogyakarta" class="splash-logo splash-logo-uny" />
+                </div>
+                <p class="splash-desc">
+                    SiapLulus merupakan platform media pembelajaran delapan dimensi Profil Lulusan
+                    yang bertujuan untuk mendukung generasi unggul dengan karakter dan kompetensi
+                    yang holistik.
+                </p>
+                <button type="button" id="btnLanjutSplash" class="splash-lanjut-btn">Next</button>
+            </div>
+
+            <div class="splash-bottom">
+                <p class="splash-inventor-label">Inventor:</p>
+                <div class="splash-names">
+                    <p>Arief Nurrahman</p>
+                    <p>Prof. Sukirno, M.Si., Ph.D., C.P.M., S.M.A.C., Ch.M.A</p>
+                    <p>Prof. Dr. Ali Muhson, M.Pd.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 0. LOGIN -->
+    <div id="login-screen" class="screen">
+        <div class="menu-container">
+            <div style="display:flex; justify-content:center; align-items:center; gap:14px; margin-bottom:16px;">
+                <img src="logo-siaplulus.png" alt="Logo SiapLulus" style="width:100px; height:auto; display:block;" />
+                <img src="logo-uny.png" alt="Logo Universitas Negeri Yogyakarta" style="width:78px; height:auto; display:block;" />
+            </div>
+            <h1>SiapLulus</h1>
+            <p class="app-subtitle">PLATFORM MEDIA PEMBELAJARAN DELAPAN DIMENSI<br>PROFIL LULUSAN</p>
+            <p>Silakan pilih jenis login</p>
+            <button onclick="switchScreen('data-diri-screen')">Login Siswa</button>
+            <button onclick="switchScreen('admin-login-screen')">Login Admin</button>
+        </div>
+    </div>
+
+    <!-- 0b. LOGIN ADMIN -->
+    <div id="admin-login-screen" class="screen">
+        <div class="menu-container">
+            <h2>Login Admin</h2>
+            <input type="password" id="adminPassword" placeholder="Password Admin (BRIGHT)" autocomplete="off" />
+            <button type="button" onclick="loginAdmin()">Login</button>
+            <button type="button" onclick="switchScreen('login-screen')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 1. DATA DIRI SISWA -->
+    <div id="data-diri-screen" class="screen">
+        <div class="menu-container">
+            <h2>Data Diri</h2>
+            <input type="text" id="dataNama" placeholder="Nama Lengkap" autocomplete="off" />
+            <input type="text" id="dataKelas" placeholder="Kelas" autocomplete="off" />
+            <input type="text" id="dataJurusan" placeholder="Jurusan" autocomplete="off" />
+            <input type="text" id="dataSekolah" placeholder="Asal Sekolah" autocomplete="off" />
+            <button type="button" onclick="simpanDataDiri()">Lanjut</button>
+            <button type="button" onclick="switchScreen('login-screen')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 2. MENU UTAMA SISWA (Dashboard Card) -->
+    <div id="main-menu" class="screen">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <div class="dashboard-avatar" id="avatarInisial">S</div>
+                <div class="dashboard-header-text">
+                    <p class="dashboard-eyebrow">SiapLulus</p>
+                    <p class="dashboard-greeting" id="sapaanSiswa">Halo!</p>
+                </div>
+            </div>
+
+            <div class="dashboard-progress-card">
+                <div class="dashboard-progress-top">
+                    <span>Progres Asesmen</span>
+                    <span id="dashboardProgressLabel">0/8 marker</span>
+                </div>
+                <div class="dashboard-progress-track">
+                    <div class="dashboard-progress-fill" id="dashboardProgressFill" style="width:0%;"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <button type="button" class="dashboard-card" onclick="switchScreen('petunjuk-screen')">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="16" x2="12" y2="11"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </span>
+                    <span class="dashboard-card-label">Petunjuk</span>
+                </button>
+
+                <button type="button" class="dashboard-card" onclick="bukaMateri()">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </span>
+                    <span class="dashboard-card-label">Materi</span>
+                </button>
+
+                <button type="button" class="dashboard-card dashboard-card-highlight" onclick="mulaiAssesmen()">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    </span>
+                    <span class="dashboard-card-label">Mulai Asesmen</span>
+                </button>
+
+                <button type="button" class="dashboard-card" onclick="switchScreen('video-screen')">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    </span>
+                    <span class="dashboard-card-label">Video</span>
+                </button>
+
+                <button type="button" class="dashboard-card" onclick="bukaHasilAssesmen()">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    </span>
+                    <span class="dashboard-card-label">Hasil Asesmen</span>
+                </button>
+
+                <button type="button" class="dashboard-card" onclick="bukaRekomendasi()">
+                    <span class="dashboard-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </span>
+                    <span class="dashboard-card-label">Rekomendasi Hasil Asesmen</span>
+                </button>
+            </div>
+
+            <button type="button" class="dashboard-logout" onclick="logoutSiswa()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; vertical-align:-3px; margin-right:6px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- 2a. PETUNJUK -->
+    <div id="petunjuk-screen" class="screen">
+        <div class="menu-container" style="max-width:600px; text-align:left;">
+            <h2 style="text-align:center;">Petunjuk Penggunaan</h2>
+            <div style="font-size:14px; line-height:1.7;">
+                <ol style="padding-left:20px; margin:0;">
+                    <li>Pastikan Anda sudah mengisi Data Diri (Nama, Kelas, Jurusan, Asal Sekolah) dengan benar.</li>
+                    <li>Baca terlebih dahulu menu <strong>Materi</strong> dan tonton menu <strong>Video</strong> sebelum memulai asesmen, agar lebih memahami delapan dimensi Profil Lulusan.</li>
+                    <li>Pada menu <strong>Mulai Asesmen</strong>, izinkan akses kamera perangkat Anda.</li>
+                    <li>Arahkan kamera ke kartu marker (1-8) satu per satu. Setiap kartu akan memunculkan gambar Augmented Reality 3D beserta audio penjelasan.</li>
+                    <li>Setelah audio selesai, tekan tombol <strong>Next</strong> untuk menjawab 3 pertanyaan terkait marker tersebut.</li>
+                    <li>Ulangi proses ini hingga seluruh 8 marker selesai dipindai dan dijawab.</li>
+                    <li>Setelah selesai, tekan tombol <strong>Kirim &amp; Selesai</strong> untuk menyimpan hasil asesmen Anda.</li>
+                    <li>Hasil dapat dilihat pada menu <strong>Hasil Asesmen</strong>, dan rekomendasi berbasis AI dapat dilihat pada menu <strong>Rekomendasi Hasil Asesmen</strong>.</li>
+                    <li>Gunakan tombol <strong>Tanya AI</strong> pada halaman Rekomendasi jika ingin bertanya lebih lanjut seputar hasil Anda.</li>
+                </ol>
+            </div>
+            <button type="button" onclick="switchScreen('main-menu')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 2b. MATERI (LMS Premium: sidebar/tab per dimensi) -->
+    <div id="materi-screen" class="screen">
+        <div class="lms-container">
+            <div class="lms-header">
+                <h2 class="lms-title">Materi Delapan Dimensi</h2>
+                <div class="lms-progress-wrap">
+                    <span id="lmsProgressLabel">Dimensi 1 dari 8</span>
+                    <div class="lms-progress-track">
+                        <div class="lms-progress-fill" id="lmsProgressFill" style="width:12.5%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lms-tabs" id="lmsTabs"></div>
+
+            <div class="lms-content" id="lmsContent"></div>
+
+            <div class="lms-nav">
+                <button type="button" class="lms-nav-btn" id="lmsPrevBtn">‹ Sebelumnya</button>
+                <button type="button" class="lms-nav-btn lms-nav-btn-primary" id="lmsNextBtn">Selanjutnya ›</button>
+            </div>
+
+            <button type="button" onclick="switchScreen('main-menu')" style="margin-top:14px;">Kembali ke Menu Utama</button>
+        </div>
+    </div>
+
+    <!-- 2c. VIDEO -->
+    <div id="video-screen" class="screen">
+        <div class="menu-container" style="max-width:600px; text-align:left;">
+            <h2 style="text-align:center;">Video Pembelajaran</h2>
+            <p style="font-size:14px; margin-bottom:6px;"><strong id="video-judul">Pengenalan SiapLulus dan Delapan Dimensi Profil Lulusan</strong></p>
+            <div style="position:relative; width:100%; padding-top:56.25%; margin-bottom:16px; border-radius:8px; overflow:hidden;">
+                <iframe id="video-embed"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                    style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+                    title="Video Pembelajaran SiapLulus"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <p style="font-size:12px; color:#cbd5e1;">*Ganti tautan video di atas melalui kode sumber (id="video-embed") sesuai video pembelajaran resmi.</p>
+            <button type="button" onclick="switchScreen('main-menu')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 2d. MENU ADMIN (setelah login berhasil) -->
+    <div id="admin-menu-screen" class="screen">
+        <div class="menu-container">
+            <h2>Menu Admin</h2>
+            <button type="button" onclick="switchScreen('leaderboard-screen'); loadLeaderboard();">Leaderboard</button>
+            <button type="button" onclick="switchScreen('editor-soal-screen'); loadEditorSoal();">Editor Soal</button>
+            <button type="button" onclick="bukaDatabase()">Database</button>
+            <button type="button" onclick="logoutAdmin()">Logout</button>
+        </div>
+    </div>
+
+    <!-- 2e. LEADERBOARD ADMIN -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="menu-container" style="max-width: 700px; text-align:left;">
+            <h2 style="text-align:center;">Leaderboard Admin</h2>
+
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <select id="filterKelas" style="flex:1; min-width:100px; padding:8px; border-radius:6px; background:#0D47A1; color:#fff; border:1px solid #90CAF9;">
+                    <option value="">Semua Kelas</option>
+                    <option value="10">Kelas 10</option>
+                    <option value="11">Kelas 11</option>
+                    <option value="12">Kelas 12</option>
+                </select>
+                <select id="filterSekolah" style="flex:2; min-width:140px; padding:8px; border-radius:6px; background:#0D47A1; color:#fff; border:1px solid #90CAF9;">
+                    <option value="">Semua Sekolah</option>
+                </select>
+                <select id="filterSort" style="flex:1; min-width:140px; padding:8px; border-radius:6px; background:#0D47A1; color:#fff; border:1px solid #90CAF9;">
+                    <option value="tertinggi">Skor Tertinggi</option>
+                    <option value="terendah">Skor Terendah</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="text" id="sekolahBaruInput" placeholder="Tambah nama sekolah baru..." style="margin:0;" />
+                <button type="button" id="btnTambahSekolah" style="width:auto; padding:8px 14px; margin:0;">+ Tambah</button>
+            </div>
+
+            <div id="leaderboardTableWrapper" style="max-height:50vh; overflow-y:auto; margin-bottom:16px;">
+                <p id="leaderboardStatus">Memuat data...</p>
+                <table id="leaderboardTable" style="width:100%; border-collapse:collapse; font-size:13px; display:none;">
+                    <thead>
+                        <tr style="color:#90CAF9; text-align:left; border-bottom:1px solid #90CAF9;">
+                            <th style="padding:6px 4px;">Nama</th>
+                            <th style="padding:6px 4px;">Kelas</th>
+                            <th style="padding:6px 4px;">Jurusan</th>
+                            <th style="padding:6px 4px;">Sekolah</th>
+                            <th style="padding:6px 4px; text-align:right;">Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardTbody"></tbody>
+                </table>
+            </div>
+            <button type="button" onclick="switchScreen('admin-menu-screen')">Kembali ke Menu Admin</button>
+        </div>
+    </div>
+
+    <!-- 2f. EDITOR SOAL ADMIN -->
+    <div id="editor-soal-screen" class="screen">
+        <div class="menu-container" style="max-width: 700px; text-align:left;">
+            <h2 style="text-align:center;">Editor Soal</h2>
+            <div id="editorSoalList" style="max-height:60vh; overflow-y:auto; margin-bottom:16px;">
+                <p>Memuat data...</p>
+            </div>
+            <button type="button" onclick="switchScreen('admin-menu-screen')">Kembali ke Menu Admin</button>
+        </div>
+    </div>
+
+    <!-- 2g. MODAL EDIT SATU BUTIR SOAL -->
+    <div id="editSoalModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-height:85vh; overflow-y:auto;">
+            <h2 class="modal-title" id="editSoalTitle">Edit Soal</h2>
+            <input type="hidden" id="editSoalNo" />
+
+            <label style="font-size:12px; color:#90CAF9;">Dimensi</label>
+            <input type="text" id="editDimensi" />
+
+            <label style="font-size:12px; color:#90CAF9;">Pertanyaan</label>
+            <textarea id="editPertanyaan" rows="3" style="width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid #90CAF9; background:#0D47A1; color:#fff; box-sizing:border-box; font-family:inherit;"></textarea>
+
+            <div id="editOpsiContainer"></div>
+
+            <label style="font-size:12px; color:#90CAF9;">Rekomendasi (untuk skor rendah)</label>
+            <textarea id="editRekomendasi" rows="3" style="width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid #90CAF9; background:#0D47A1; color:#fff; box-sizing:border-box; font-family:inherit;"></textarea>
+
+            <button type="button" id="btnSimpanSoal">Simpan Perubahan</button>
+            <button type="button" onclick="document.getElementById('editSoalModal').style.display='none'">Batal</button>
+        </div>
+    </div>
+
+    <!-- 3. LAYAR AR (KAMERA & SCAN MARKER -> GAMBAR AR 3D + AUDIO) -->
+    <div id="ar-screen" class="screen">
+        <div class="top-bar">
+            <button onclick="stopGameAndGoHome()">Kembali ke Menu</button>
+        </div>
+        <div id="scan-hint" class="scan-hint">Arahkan kamera ke salah satu kartu marker (1-8)...</div>
+        <div id="progress-hint" class="scan-hint" style="top:45px; font-size:12px;">Terjawab: 0/8</div>
+        <button type="button" id="ar-next-btn" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); width:auto; padding:14px 40px; z-index:15;">Next</button>
+
+        <a-scene
+            id="ar-scene"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false;"
+            loading-screen="enabled: false"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            renderer="colorManagement: true;">
+
+            <a-assets>
+                <!-- AUDIO per marker: ganti soal1.mp3 dst dengan audio penjelasan asli -->
+                <audio id="assess-audio-0" src="soal1.mp3" preload="none"></audio>
+                <audio id="assess-audio-1" src="soal2.mp3" preload="none"></audio>
+                <audio id="assess-audio-2" src="soal3.mp3" preload="none"></audio>
+                <audio id="assess-audio-3" src="soal4.mp3" preload="none"></audio>
+                <audio id="assess-audio-4" src="soal5.mp3" preload="none"></audio>
+                <audio id="assess-audio-5" src="soal6.mp3" preload="none"></audio>
+                <audio id="assess-audio-6" src="soal7.mp3" preload="none"></audio>
+                <audio id="assess-audio-7" src="soal8.mp3" preload="none"></audio>
+
+                <!-- MODEL 3D hasil optimasi (mesh disederhanakan + tekstur dikompres).
+                     Taruh kedelapan file .glb ini di folder yang sama dengan index.html
+                     (atau sesuaikan path src di bawah kalau ditaruh di subfolder, mis. "models/..."). -->
+                <a-asset-item id="model-0" src="1__Keimanan_dan_Ketakwaan_final.glb"></a-asset-item>
+                <a-asset-item id="model-1" src="2__Kewargaan_final.glb"></a-asset-item>
+                <a-asset-item id="model-2" src="3__Penalaran_Kritis_final.glb"></a-asset-item>
+                <a-asset-item id="model-3" src="4__Kreatifitas_final.glb"></a-asset-item>
+                <a-asset-item id="model-4" src="5__Kolaborasi_final.glb"></a-asset-item>
+                <a-asset-item id="model-5" src="6__kemandirian_final.glb"></a-asset-item>
+                <a-asset-item id="model-6" src="7__Kesehatan_final.glb"></a-asset-item>
+                <a-asset-item id="model-7" src="8__Komunikasi_final.glb"></a-asset-item>
+            </a-assets>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+            <!-- Setiap target menampilkan model 3D aslinya begitu marker terdeteksi.
+                 Sesuaikan atribut "scale" per model kalau ukurannya terlihat terlalu
+                 besar/kecil di layar (tiap model bisa punya skala asal berbeda). -->
+            <a-entity id="target-0" mindar-image-target="targetIndex: 0">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-0" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-1" mindar-image-target="targetIndex: 1">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-1" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-2" mindar-image-target="targetIndex: 2">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-2" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-3" mindar-image-target="targetIndex: 3">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-3" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-4" mindar-image-target="targetIndex: 4">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-4" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-5" mindar-image-target="targetIndex: 5">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-5" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-6" mindar-image-target="targetIndex: 6">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-6" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-7" mindar-image-target="targetIndex: 7">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-7" position="0 0 0.3" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>
+        </a-scene>
+    </div>
+
+    <!-- 4. LAYAR KUIS -->
+    <div id="quiz-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title" id="quiz-dimensi-label">Kuis</h2>
+            <div id="quiz-body"></div>
+            <button type="button" id="quiz-next-btn" class="next-btn" style="display:none;">Lanjut</button>
+        </div>
+    </div>
+
+    <!-- 5. LAYAR SUBMIT AKHIR -->
+    <div id="submit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">Asesmen Selesai</h2>
+            <p class="score-text">Total Skor Anda: <span id="final-total-score">0</span> / 100</p>
+            <button type="button" id="btn-kirim">Kirim & Selesai</button>
+        </div>
+    </div>
+
+    <!-- 5b. Setelah submit sukses -->
+    <div id="submit-success-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2 class="modal-title">Berhasil Dikirim!</h2>
+            <p class="score-text">Data Asesmen Anda telah tersimpan.</p>
+            <button type="button" onclick="backToMenuAfterSubmit()">Menu Utama</button>
+        </div>
+    </div>
+
+    <!-- 6. HASIL ASESMEN -->
+    <div id="hasil-screen" class="screen">
+        <div class="menu-container" style="max-width: 600px; text-align:left;">
+            <h2 style="text-align:center;">Hasil Asesmen</h2>
+            <div id="hasil-body">Memuat data...</div>
+            <button type="button" onclick="switchScreen('main-menu')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 7. REKOMENDASI HASIL ASESMEN -->
+    <div id="rekomendasi-screen" class="screen">
+        <div class="menu-container" style="max-width: 600px; text-align:left;">
+            <h2 style="text-align:center;">Rekomendasi Hasil Asesmen</h2>
+            <div id="rekomendasi-body">Memuat data...</div>
+            <button type="button" onclick="switchScreen('main-menu')">Kembali</button>
+        </div>
+    </div>
+
+    <!-- 8. CHAT AI (muncul mengambang di atas Rekomendasi) -->
+    <div id="chat-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="display:flex; flex-direction:column; max-height:80vh;">
+            <h2 class="modal-title" id="chat-dimensi-label">Tanya AI</h2>
+            <div id="chat-messages" style="flex:1; overflow-y:auto; margin-bottom:12px; padding-right:4px;"></div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="chatInput" placeholder="Tulis pertanyaanmu..." autocomplete="off" style="margin:0;" />
+                <button type="button" id="chatSendBtn" style="width:auto; padding:10px 16px; margin:0;">Kirim</button>
+            </div>
+            <button type="button" onclick="tutupChatAI()" style="margin-top:10px;">Tutup</button>
+        </div>
+    </div>
+
+    <script src="materi-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
