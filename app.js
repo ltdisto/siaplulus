@@ -349,15 +349,25 @@ function waitForCameraVideoThenHideOverlay() {
         sudahSelesai = true;
         console.log('[AR-DEBUG] selesaikan() FIRE. berhasil=', berhasil, 'alasan=', alasan, 'setelah', Date.now() - startTime, 'ms,', jumlahCek, 'kali cek');
 
-        // Resize paksa SEKALI LAGI tepat di titik ini — saat video benar-benar
-        // terkonfirmasi aktif, momen paling tepat untuk pastikan canvas ikut
-        // menyesuaikan ukuran (bukan lagi 0x0).
+        // Cek ukuran canvas TEPAT saat video terkonfirmasi aktif. HANYA panggil
+        // resize() kalau memang terbukti canvas-nya 0 di titik ini — supaya tidak
+        // mengulang kesalahan sebelumnya (resize yang dipanggil di waktu yang salah
+        // justru bisa MERUSAK canvas yang sebenarnya sudah berukuran benar).
         const sceneElNow = document.querySelector('#ar-scene');
         if (sceneElNow) {
             const canvasEl = sceneElNow.querySelector('canvas.a-canvas');
-            console.log('[AR-DEBUG] canvas saat selesaikan():', canvasEl ? `${canvasEl.width}x${canvasEl.height}` : 'tidak ditemukan');
-            if (typeof sceneElNow.resize === 'function') sceneElNow.resize();
-            window.dispatchEvent(new Event('resize'));
+            const wSebelum = canvasEl ? canvasEl.width : null;
+            const hSebelum = canvasEl ? canvasEl.height : null;
+            console.log('[AR-DEBUG] canvas saat selesaikan() SEBELUM cek:', wSebelum, 'x', hSebelum);
+
+            if (canvasEl && (canvasEl.width === 0 || canvasEl.height === 0)) {
+                console.log('[AR-DEBUG] canvas terbukti 0, mencoba resize()...');
+                if (typeof sceneElNow.resize === 'function') sceneElNow.resize();
+                window.dispatchEvent(new Event('resize'));
+                console.log('[AR-DEBUG] canvas SESUDAH resize():', canvasEl.width, 'x', canvasEl.height);
+            } else {
+                console.log('[AR-DEBUG] canvas sudah punya ukuran valid, TIDAK perlu resize.');
+            }
         }
 
         hideArLoadingOverlay();
@@ -473,25 +483,16 @@ function mulaiAssesmen() {
                         sys.start();
                         console.log('[AR-DEBUG] sys.start() selesai dipanggil (async internal jalan di background)');
 
-                        // FIX PENTING: karena <a-scene> disuntikkan secara dinamis
-                        // (bukan ada sejak halaman dimuat), A-Frame kadang salah
-                        // menghitung ukuran <canvas> jadi 0x0 (race condition saat
-                        // renderer pertama kali dibuat, window belum "dianggap siap").
-                        // Paksa hitung ulang beberapa kali sebagai jaring pengaman.
-                        const paksaResizeCanvas = () => {
-                            const canvasEl = sceneEl.querySelector('canvas.a-canvas');
-                            console.log('[AR-DEBUG] paksaResizeCanvas() canvas width/height SEBELUM:',
-                                canvasEl ? canvasEl.width : null, canvasEl ? canvasEl.height : null);
-                            if (typeof sceneEl.resize === 'function') {
-                                sceneEl.resize();
-                            }
-                            window.dispatchEvent(new Event('resize'));
-                            console.log('[AR-DEBUG] paksaResizeCanvas() canvas width/height SESUDAH:',
-                                canvasEl ? canvasEl.width : null, canvasEl ? canvasEl.height : null);
-                        };
-                        paksaResizeCanvas();
-                        setTimeout(paksaResizeCanvas, 300);
-                        setTimeout(paksaResizeCanvas, 1000);
+                        // CATATAN: sebelumnya di sini ada pemanggilan resize() paksa
+                        // segera setelah start() — TERBUKTI JUSTRU MERUSAK. Canvas
+                        // sempat sudah berukuran benar (mis. 450x225) secara alami,
+                        // tapi resize() yang dipanggil TERLALU DINI (sebelum video
+                        // tahu resolusi aslinya, readyState masih 0) membuat A-Frame
+                        // menghitung ulang berdasarkan info video yang belum ada,
+                        // hasilnya 0x0. Resize (kalau memang perlu) sekarang HANYA
+                        // dilakukan di dalam selesaikan() — lihat waitForCameraVideoThenHideOverlay()
+                        // — yaitu tepat setelah video benar-benar siap (readyState>=2),
+                        // dan HANYA kalau canvas terbukti masih 0 saat itu.
 
                         waitForCameraVideoThenHideOverlay();
                     } catch (startErr) {
