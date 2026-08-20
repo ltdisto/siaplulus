@@ -313,13 +313,90 @@ function setArLoadingText(mainText, subText) {
 }
 
 function showArLoadingOverlay() {
+    console.log('[AR-DEBUG] showArLoadingOverlay() dipanggil');
     const overlay = document.getElementById('ar-loading-overlay');
     if (overlay) overlay.classList.remove('ar-loading-hidden');
 }
 
 function hideArLoadingOverlay() {
+    console.log('[AR-DEBUG] hideArLoadingOverlay() dipanggil dari:', new Error().stack);
     const overlay = document.getElementById('ar-loading-overlay');
     if (overlay) overlay.classList.add('ar-loading-hidden');
+}
+
+// Menunggu video kamera BENAR-BENAR mengalirkan gambar (bukan cuma menunggu
+// sys.start() selesai dipanggil) sebelum menutup overlay loading. sys.start()
+// hanya MEMINTA izin kamera (getUserMedia) — antara itu dipanggil sampai video
+// sungguhan tampil (termasuk waktu pengguna menekan "Izinkan" di dialog kamera)
+// bisa makan waktu lebih dari sekejap, dan sebelumnya overlay ditutup terlalu
+// cepat (fixed delay) sehingga sempat menampakkan canvas AR yang masih putih
+// kosong di baliknya.
+function waitForCameraVideoThenHideOverlay() {
+    setArLoadingText('Membuka kamera...', 'Mohon izinkan akses kamera saat diminta');
+    console.log('[AR-DEBUG] waitForCameraVideoThenHideOverlay() mulai');
+
+    const scanHint = document.getElementById('scan-hint');
+    const startTime = Date.now();
+    const MAX_WAIT_MS = 15000; // batas pengaman: 15 detik
+    let sudahSelesai = false;
+    let jumlahCek = 0;
+
+    const selesaikan = (berhasil, alasan) => {
+        if (sudahSelesai) {
+            console.log('[AR-DEBUG] selesaikan() dipanggil lagi tapi sudahSelesai=true, diabaikan. alasan:', alasan);
+            return;
+        }
+        sudahSelesai = true;
+        console.log('[AR-DEBUG] selesaikan() FIRE. berhasil=', berhasil, 'alasan=', alasan, 'setelah', Date.now() - startTime, 'ms,', jumlahCek, 'kali cek');
+        hideArLoadingOverlay();
+        if (berhasil) {
+            if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+        } else {
+            if (scanHint) scanHint.textContent = 'Kamera tidak merespons. Cek izin kamera di pengaturan browser, lalu coba lagi.';
+            console.error('[AR] Timeout menunggu video kamera aktif setelah', MAX_WAIT_MS, 'ms.');
+        }
+    };
+
+    const cekVideo = () => {
+        if (sudahSelesai) return;
+        jumlahCek++;
+
+        const videoEl = document.querySelector('#ar-screen video');
+        console.log('[AR-DEBUG] cekVideo() #' + jumlahCek, {
+            videoAda: !!videoEl,
+            readyState: videoEl ? videoEl.readyState : null,
+            paused: videoEl ? videoEl.paused : null,
+            videoWidth: videoEl ? videoEl.videoWidth : null,
+            videoHeight: videoEl ? videoEl.videoHeight : null,
+            elapsedMs: Date.now() - startTime,
+        });
+
+        if (videoEl) {
+            // Kalau video sudah punya frame nyata (readyState >= 2 = HAVE_CURRENT_DATA)
+            // pada saat kita cek, langsung selesai. Kalau belum, tunggu event 'playing'.
+            if (videoEl.readyState >= 2 && !videoEl.paused) {
+                selesaikan(true, 'readyState>=2 saat polling ke-' + jumlahCek);
+                return;
+            }
+            if (!videoEl.dataset.arListenerAttached) {
+                videoEl.dataset.arListenerAttached = '1';
+                videoEl.addEventListener('playing', () => selesaikan(true, "event 'playing'"), { once: true });
+                videoEl.addEventListener('loadeddata', () => {
+                    console.log('[AR-DEBUG] event loadeddata fired, readyState=', videoEl.readyState);
+                    if (videoEl.readyState >= 2) selesaikan(true, "event 'loadeddata' + readyState>=2");
+                }, { once: true });
+            }
+        }
+
+        if (Date.now() - startTime >= MAX_WAIT_MS) {
+            selesaikan(false, 'timeout ' + MAX_WAIT_MS + 'ms tercapai');
+            return;
+        }
+
+        setTimeout(cekVideo, 200);
+    };
+
+    cekVideo();
 }
 
 function mulaiAssesmen() {
@@ -374,16 +451,16 @@ function mulaiAssesmen() {
             // layar sepenuhnya selama ini, sehingga siswa tidak melihat layar
             // putih/kosong saat proses download+decode berlangsung.
             const startWhenReady = () => {
+                console.log('[AR-DEBUG] startWhenReady() dipanggil. sceneEl.hasLoaded=', sceneEl.hasLoaded);
                 setArLoadingText('Membuka kamera...', 'Mohon izinkan akses kamera saat diminta');
                 const sys = getArSystem();
+                console.log('[AR-DEBUG] getArSystem() ->', sys);
                 if (sys) {
                     try {
+                        console.log('[AR-DEBUG] memanggil sys.start()...');
                         sys.start();
-                        setTimeout(() => {
-                            hideArLoadingOverlay();
-                            const scanHint = document.getElementById('scan-hint');
-                            if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
-                        }, 400); // jeda singkat supaya video kamera sempat tampil dulu sebelum overlay hilang
+                        console.log('[AR-DEBUG] sys.start() selesai dipanggil (async internal jalan di background)');
+                        waitForCameraVideoThenHideOverlay();
                     } catch (startErr) {
                         console.error('Gagal memulai kamera AR:', startErr);
                         setArLoadingText('Gagal memulai kamera', 'Coba refresh halaman, lalu ulangi.');
@@ -394,10 +471,14 @@ function mulaiAssesmen() {
                 }
             };
 
+            console.log('[AR-DEBUG] sebelum cek hasLoaded. sceneEl.hasLoaded=', sceneEl.hasLoaded);
             if (sceneEl.hasLoaded) {
                 startWhenReady();
             } else {
-                sceneEl.addEventListener('loaded', startWhenReady, { once: true });
+                sceneEl.addEventListener('loaded', () => {
+                    console.log('[AR-DEBUG] event "loaded" dari a-scene FIRE');
+                    startWhenReady();
+                }, { once: true });
             }
         })
         .catch(err => {
