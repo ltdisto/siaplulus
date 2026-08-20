@@ -23,6 +23,23 @@ body {
     align-items: center;
 }
 
+/* Pengaman KRUSIAL: A-Frame secara default bisa membuat <a-scene> mengambang
+   penuh layar (fixed/fullscreen) begitu elemen ini di-parse browser, TANPA
+   menunggu #ar-screen benar-benar aktif. Baris ini memaksa <a-scene> dan
+   canvas WebGL-nya benar-benar tersembunyi total kecuali #ar-screen sedang
+   aktif — mencegah layar putih/hitam menutupi Opening atau Login. */
+#ar-screen:not(.active) a-scene,
+#ar-screen:not(.active) canvas.a-canvas {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+#ar-screen.active a-scene {
+    width: 100%;
+    height: 100%;
+}
+
 .menu-container {
     text-align: center;
     background: #123262; /* Navy medium (container) */
