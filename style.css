@@ -206,9 +206,14 @@ input, textarea {
 }
 
 /* Paksa sembunyikan tombol VR/AR/fullscreen bawaan A-Frame yang bisa menutupi
-   tombol "Next" di layar AR, terlepas dari pengaturan vr-mode-ui */
+   tombol "Next" di layar AR, terlepas dari pengaturan vr-mode-ui.
+   PENTING: JANGAN masukkan ".a-fullscreen" (tanpa -button) ke selector ini —
+   itu BUKAN nama class tombol, melainkan class yang ditempelkan A-Frame ke tag
+   <html> saat mode AR/kamera aktif. Memasukkannya ke sini pernah menyebabkan
+   SELURUH HALAMAN (karena <html> adalah elemen paling akar) ikut ter-display:none
+   begitu kamera AR dimulai — inilah penyebab bug "layar putih" yang sebenarnya. */
 .a-enter-vr, .a-enter-vr-button, .a-enter-ar, .a-enter-ar-button,
-.a-orientation-modal, .a-fullscreen, .a-fullscreen-button {
+.a-orientation-modal, .a-fullscreen-button {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
