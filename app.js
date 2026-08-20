@@ -185,6 +185,119 @@ function switchScreen(screenId) {
     if (screenId === 'main-menu') updateDashboardProgressCard();
 }
 
+// ================= INJEKSI LAZY <a-scene> (baru dimasukkan ke DOM saat
+// "Mulai Asesmen" diklik, supaya 8 model .glb (~30MB) TIDAK ikut terdownload
+// saat halaman pertama kali dibuka) =================
+let arSceneSudahDisuntik = false;
+
+function buildArSceneHtml() {
+    const modelFiles = [
+        '1__Keimanan_dan_Ketakwaan_final.glb',
+        '2__Kewargaan_final.glb',
+        '3__Penalaran_Kritis_final.glb',
+        '4__Kreatifitas_final.glb',
+        '5__Kolaborasi_final.glb',
+        '6__kemandirian_final.glb',
+        '7__Kesehatan_final.glb',
+        '8__Komunikasi_final.glb',
+    ];
+
+    const audioTags = Array.from({ length: 8 }, (_, i) =>
+        `<audio id="assess-audio-${i}" src="soal${i + 1}.mp3" preload="none"></audio>`
+    ).join('\n                ');
+
+    const assetItems = modelFiles.map((f, i) =>
+        `<a-asset-item id="model-${i}" src="${f}"></a-asset-item>`
+    ).join('\n                ');
+
+    const targets = modelFiles.map((_, i) => `
+            <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
+                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0.3" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+            </a-entity>`).join('');
+
+    return `
+        <a-scene
+            id="ar-scene"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false;"
+            loading-screen="enabled: false"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            renderer="colorManagement: true;">
+
+            <a-assets>
+                ${audioTags}
+                ${assetItems}
+            </a-assets>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            ${targets}
+        </a-scene>
+    `;
+}
+
+function injectArSceneIfNeeded() {
+    if (arSceneSudahDisuntik) return;
+    const slot = document.getElementById('ar-scene-slot');
+    if (!slot) return;
+    slot.innerHTML = buildArSceneHtml();
+    arSceneSudahDisuntik = true;
+    initArMarkerListeners();
+    initArAudioDebugListeners();
+}
+
+// Listener marker (targetFound/targetLost) — dipindah dari DOMContentLoaded ke
+// sini karena elemen #target-0..7 baru ADA setelah injectArSceneIfNeeded()
+// dipanggil, tidak lagi tersedia sejak awal load halaman.
+function initArMarkerListeners() {
+    const scanHint = document.getElementById('scan-hint');
+
+    const isMarkerLengkapTerjawab = (marker) => {
+        const range = markerRanges[marker];
+        if (!range) return false;
+        for (let idx = range.start; idx < range.end; idx++) {
+            if (userAnswersFlat[idx] === null) return false;
+        }
+        return true;
+    };
+
+    for (let i = 0; i < 8; i++) {
+        const targetEl = document.querySelector('#target-' + i);
+        if (!targetEl) continue;
+
+        targetEl.addEventListener('targetFound', () => {
+            if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
+            if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
+                playAudioForTarget(i);
+            } else if (!isMarkerLengkapTerjawab(i)) {
+                tampilkanTombolNextAR(i);
+            }
+        });
+
+        targetEl.addEventListener('targetLost', () => {
+            if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+            const btn = document.getElementById('ar-next-btn');
+            if (btn) btn.style.display = 'none';
+            if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
+                const a = document.getElementById('assess-audio-' + i);
+                if (a) a.pause();
+            }
+        });
+    }
+}
+
+function initArAudioDebugListeners() {
+    for (let i = 0; i < 8; i++) {
+        const a = document.getElementById('assess-audio-' + i);
+        if (!a) continue;
+        a.addEventListener('error', () => {
+            const err = a.error;
+            console.error(`[AUDIO ${i}] ERROR code=${err ? err.code : '?'} message=${err ? err.message : '(tidak ada detail)'}`);
+        });
+        a.addEventListener('canplay', () => console.log(`[AUDIO ${i}] siap diputar (canplay)`));
+        a.addEventListener('playing', () => console.log(`[AUDIO ${i}] MULAI BERMAIN (playing)`));
+        a.addEventListener('ended', () => console.log(`[AUDIO ${i}] SELESAI (ended)`));
+    }
+}
+
 function getArSystem() {
     const sceneEl = document.querySelector('#ar-scene');
     if (!sceneEl || !sceneEl.systems) return null;
@@ -217,7 +330,9 @@ function mulaiAssesmen() {
             }
 
             updateProgressHint();
-            if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+            if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Memuat model 3D & memulai kamera...';
+
+            injectArSceneIfNeeded();
 
             const sceneEl = document.querySelector('#ar-scene');
             sceneEl.style.display = '';
@@ -225,10 +340,12 @@ function mulaiAssesmen() {
                 const arSystem = getArSystem();
                 if (arSystem) {
                     arSystem.start();
+                    if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
                 } else {
                     sceneEl.addEventListener('loaded', () => {
                         const sys = getArSystem();
                         if (sys) sys.start();
+                        if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
                     }, { once: true });
                 }
             };
@@ -1166,58 +1283,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ================= INISIALISASI EVENT (8 marker fisik) =================
+// ================= INISIALISASI EVENT (tombol-tombol umum) =================
+// Catatan: listener untuk 8 marker fisik (targetFound/targetLost) dan audio
+// TIDAK didaftarkan di sini lagi — dipindah ke initArMarkerListeners() dan
+// initArAudioDebugListeners(), yang baru dipanggil setelah <a-scene> disuntikkan
+// ke DOM (lihat injectArSceneIfNeeded()), karena elemen-elemen itu belum ada
+// sama sekali saat DOMContentLoaded jika belum pernah klik "Mulai Asesmen".
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        const scanHint = document.getElementById('scan-hint');
-
-        for (let i = 0; i < 8; i++) {
-            const a = document.getElementById('assess-audio-' + i);
-            if (!a) continue;
-            a.addEventListener('error', () => {
-                const err = a.error;
-                console.error(`[AUDIO ${i}] ERROR code=${err ? err.code : '?'} message=${err ? err.message : '(tidak ada detail)'}`);
-            });
-            a.addEventListener('canplay', () => console.log(`[AUDIO ${i}] siap diputar (canplay)`));
-            a.addEventListener('playing', () => console.log(`[AUDIO ${i}] MULAI BERMAIN (playing)`));
-            a.addEventListener('ended', () => console.log(`[AUDIO ${i}] SELESAI (ended)`));
-        }
-
-        const isMarkerLengkapTerjawab = (marker) => {
-            const range = markerRanges[marker];
-            if (!range) return false;
-            for (let idx = range.start; idx < range.end; idx++) {
-                if (userAnswersFlat[idx] === null) return false;
-            }
-            return true;
-        };
-
-        for (let i = 0; i < 8; i++) {
-            const targetEl = document.querySelector('#target-' + i);
-            if (!targetEl) continue;
-
-            targetEl.addEventListener('targetFound', () => {
-                if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
-                if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
-                    playAudioForTarget(i);
-                } else if (!isMarkerLengkapTerjawab(i)) {
-                    // marker sudah pernah trigger sebelumnya (mis. sempat hilang & kembali) —
-                    // tetap tampilkan tombol Next tanpa mengulang audio dari awal
-                    tampilkanTombolNextAR(i);
-                }
-            });
-
-            targetEl.addEventListener('targetLost', () => {
-                if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
-                const btn = document.getElementById('ar-next-btn');
-                if (btn) btn.style.display = 'none';
-                if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
-                    const a = document.getElementById('assess-audio-' + i);
-                    if (a) a.pause();
-                }
-            });
-        }
-
         const nextBtn = document.getElementById('quiz-next-btn');
         if (nextBtn) nextBtn.addEventListener('click', goToNextQuestion);
 
