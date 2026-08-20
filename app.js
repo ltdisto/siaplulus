@@ -218,7 +218,7 @@ function buildArSceneHtml() {
     return `
         <a-scene
             id="ar-scene"
-            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false;"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; uiScanning: no; autoStart: false;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             device-orientation-permission-ui="enabled: false"
