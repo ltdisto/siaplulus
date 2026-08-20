@@ -224,7 +224,7 @@ function buildArSceneHtml() {
             device-orientation-permission-ui="enabled: false"
             renderer="colorManagement: true;">
 
-            <a-assets>
+            <a-assets timeout="20000">
                 ${audioTags}
                 ${assetItems}
             </a-assets>
@@ -336,24 +336,38 @@ function mulaiAssesmen() {
 
             const sceneEl = document.querySelector('#ar-scene');
             sceneEl.style.display = '';
-            const tryStart = () => {
-                const arSystem = getArSystem();
-                if (arSystem) {
-                    arSystem.start();
-                    if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
-                } else {
-                    sceneEl.addEventListener('loaded', () => {
-                        const sys = getArSystem();
-                        if (sys) sys.start();
+
+            // PENTING: JANGAN start() hanya karena getArSystem() sudah mengembalikan
+            // objek non-null — objek "system" bisa saja sudah ADA tapi state
+            // internalnya (mis. this.ui) belum sepenuhnya siap, menyebabkan error
+            // "Cannot read properties of undefined (reading 'showLoading')".
+            // Satu-satunya sinyal yang benar-benar aman adalah event 'loaded' resmi
+            // dari A-Frame (menandakan scene + semua <a-assets> selesai diproses),
+            // atau properti sceneEl.hasLoaded kalau event itu sudah lewat duluan.
+            const startWhenReady = () => {
+                const sys = getArSystem();
+                if (sys) {
+                    try {
+                        sys.start();
                         if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
-                    }, { once: true });
+                    } catch (startErr) {
+                        console.error('Gagal memulai kamera AR:', startErr);
+                        if (arScreenLoadingMsg) arScreenLoadingMsg.textContent = 'Gagal memulai kamera. Coba refresh halaman.';
+                    }
+                } else {
+                    console.error('Sistem mindar-image-system tidak ditemukan setelah scene loaded.');
                 }
             };
-            tryStart();
+
+            if (sceneEl.hasLoaded) {
+                startWhenReady();
+            } else {
+                sceneEl.addEventListener('loaded', startWhenReady, { once: true });
+            }
         })
         .catch(err => {
-            console.error('Gagal memuat soal:', err);
-            alert('Gagal memuat soal dari server. Cek koneksi internet, lalu coba lagi.');
+            console.error('Gagal memuat soal / memulai asesmen:', err);
+            alert('Gagal memuat halaman asesmen. Cek koneksi internet, lalu coba lagi.');
             switchScreen('main-menu');
         });
 }
