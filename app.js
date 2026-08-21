@@ -311,11 +311,32 @@ function initArMarkerListeners() {
                 // Cek susulan beberapa kali — kalau-kalau MindAR baru MENGANIMASIKAN
                 // scale dari 0 ke 1 secara bertahap (bukan instan), jadi baru kelihatan
                 // beberapa ratus ms setelah targetFound, bukan tepat di momen event ini.
+                // PENTING: cek scale GABUNGAN model itu sendiri (parent x local), bukan
+                // cuma parent saja — itu yang benar-benar menentukan ukuran tampilan akhir.
                 [200, 500, 1000, 2000].forEach(delay => {
                     setTimeout(() => {
-                        const sc = targetEl.object3D.getWorldScale(new THREE.Vector3());
-                        console.log(`[MODEL ${i}] +${delay}ms — parent visible:`, targetEl.object3D.visible,
-                            '| parent world scale:', sc.x.toFixed(3), sc.y.toFixed(3), sc.z.toFixed(3));
+                        obj.updateMatrixWorld(true);
+                        const worldScale = obj.getWorldScale(new THREE.Vector3());
+                        const worldPos = obj.getWorldPosition(new THREE.Vector3());
+                        const boxNow = new THREE.Box3().setFromObject(obj);
+                        const sizeNow = new THREE.Vector3();
+                        boxNow.getSize(sizeNow);
+                        console.log(`[MODEL ${i}] +${delay}ms MODEL (gabungan) — world scale:`,
+                            worldScale.x.toFixed(6), worldScale.y.toFixed(6), worldScale.z.toFixed(6),
+                            '| world position:', worldPos.x.toFixed(3), worldPos.y.toFixed(3), worldPos.z.toFixed(3),
+                            '| bbox tampil:', sizeNow.x.toFixed(3), sizeNow.y.toFixed(3), sizeNow.z.toFixed(3));
+
+                        // Cek juga posisi & clipping plane kamera, untuk pastikan model
+                        // tidak "terpotong" karena terlalu dekat/jauh dari kamera.
+                        const camEl = document.querySelector('#ar-scene [camera]') || document.querySelector('a-camera');
+                        if (camEl && camEl.getObject3D && camEl.getObject3D('camera')) {
+                            const cam = camEl.getObject3D('camera');
+                            const camPos = cam.getWorldPosition(new THREE.Vector3());
+                            const distance = camPos.distanceTo(worldPos);
+                            console.log(`[MODEL ${i}] +${delay}ms kamera — near:`, cam.near, 'far:', cam.far,
+                                '| posisi kamera:', camPos.x.toFixed(3), camPos.y.toFixed(3), camPos.z.toFixed(3),
+                                '| jarak kamera ke model:', distance.toFixed(3));
+                        }
                     }, delay);
                 });
             }
