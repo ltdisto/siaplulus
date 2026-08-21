@@ -219,14 +219,14 @@ input, textarea {
     pointer-events: none !important;
 }
 
-/* Jaring pengaman: UI bawaan MindAR (overlay "arahkan kamera ke target" dst)
-   sudah dinonaktifkan lewat atribut uiScanning/uiLoading/uiError: no pada
-   mindar-image. Baris ini pengaman TAMBAHAN — kalau elemen ini tetap sempat
-   dibuat oleh library untuk alasan apa pun, paksa transparan & tidak
-   menghalangi klik, supaya TIDAK PERNAH menutupi video kamera dengan warna
-   solid (ini terbukti jadi penyebab layar "putih" padahal kamera sudah aktif). */
+/* CATATAN: sebelumnya baris ini memaksa background mindar-ui-overlay jadi
+   transparan (dugaan lama: overlay ini penyebab "layar putih"). Setelah
+   investigasi lebih lanjut, UI scanning bawaan MindAR ini ternyata BUKAN
+   sekadar dekorasi — ikut berperan dalam kalkulasi transform anchor yang
+   benar (scale/posisi model 3D). Jadi TIDAK dipaksa transparan lagi di sini
+   — biarkan tampil apa adanya. pointer-events tetap none supaya tidak
+   menghalangi klik tombol Next di baliknya. */
 .mindar-ui-overlay {
-    background: transparent !important;
     pointer-events: none !important;
 }
 

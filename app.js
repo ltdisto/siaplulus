@@ -212,13 +212,13 @@ function buildArSceneHtml() {
 
     const targets = modelFiles.map((_, i) => `
             <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0.3" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
             </a-entity>`).join('');
 
     return `
         <a-scene
             id="ar-scene"
-            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; uiScanning: no; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 2; missTolerance: 5;"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 2; missTolerance: 5;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             device-orientation-permission-ui="enabled: false"
@@ -292,22 +292,6 @@ function initArMarkerListeners() {
                         }
                     });
                     console.log(`[MODEL ${i}] frustumCulled dimatikan di semua mesh anak.`);
-
-                    // DIAGNOSTIK: paksa material jadi warna solid terang (mengabaikan
-                    // tekstur asli & pengaruh cahaya), untuk memastikan apakah model
-                    // TERBUKTI ada secara geometri tapi materialnya yang bermasalah
-                    // (mis. tekstur rusak/transparan gara-gara proses kompresi dulu).
-                    let jumlahMeshDiwarnai = 0;
-                    mesh.traverse((node) => {
-                        if (node.isMesh) {
-                            node.material = new THREE.MeshBasicMaterial({
-                                color: 0xff0000, // merah terang, unlit (tidak butuh cahaya sama sekali)
-                                side: THREE.DoubleSide,
-                            });
-                            jumlahMeshDiwarnai++;
-                        }
-                    });
-                    console.log(`[MODEL ${i}] DIAGNOSTIK: ${jumlahMeshDiwarnai} mesh dipaksa jadi warna merah solid (MeshBasicMaterial).`);
                 } catch (boxErr) {
                     console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
                 }
