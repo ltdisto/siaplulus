@@ -294,6 +294,37 @@ function muatModelManual() {
 
                 containerEl.object3D.add(model);
                 console.log(`[MANUAL-LOAD ${i}] BERHASIL ditempel ke scene.`, model);
+
+                // DIAGNOSTIK PALING PENTING: telusuri rantai parent dari container
+                // ke atas, sampai ke root. Kalau rantainya TIDAK sampai ke a-scene
+                // (Scene) yang sungguhan, berarti object3D ini "terputus" dari
+                // pohon yang benar-benar dirender oleh Three.js — walau secara
+                // kode terlihat "berhasil ditempel", padahal sebenarnya menempel
+                // ke object3D yang sudah tidak terhubung ke scene aktif.
+                let node = containerEl.object3D;
+                const rantai = [];
+                let pengaman = 0;
+                while (node && pengaman < 20) {
+                    rantai.push(`${node.type}${node.el ? '#' + node.el.id : ''}`);
+                    node = node.parent;
+                    pengaman++;
+                }
+                console.log(`[MANUAL-LOAD ${i}] RANTAI PARENT (dari container ke atas):`, rantai.join(' -> '));
+
+                // Bandingkan juga dengan root scene yang SEBENARNYA dipakai renderer
+                const sceneElNyata = document.querySelector('#ar-scene');
+                if (sceneElNyata && sceneElNyata.object3D) {
+                    const sceneRootAsli = sceneElNyata.object3D;
+                    let masihSama = containerEl.object3D;
+                    let terhubung = false;
+                    let cek = 0;
+                    while (masihSama && cek < 20) {
+                        if (masihSama === sceneRootAsli) { terhubung = true; break; }
+                        masihSama = masihSama.parent;
+                        cek++;
+                    }
+                    console.log(`[MANUAL-LOAD ${i}] Apakah container TERHUBUNG ke #ar-scene.object3D (root asli)?`, terhubung);
+                }
             },
             undefined,
             (err) => {
