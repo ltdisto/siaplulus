@@ -265,8 +265,20 @@ function initArMarkerListeners() {
 
         const modelEl = targetEl.querySelector('a-gltf-model');
         if (modelEl) {
-            modelEl.addEventListener('model-loaded', () => {
+            modelEl.addEventListener('model-loaded', (e) => {
                 console.log(`[MODEL ${i}] BERHASIL dimuat (model-loaded)`, modelEl.getAttribute('src'));
+                try {
+                    const mesh = e.detail.model;
+                    const box = new THREE.Box3().setFromObject(mesh);
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+                    console.log(`[MODEL ${i}] Ukuran bounding box asli:`, size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3),
+                        '| Center:', center.x.toFixed(3), center.y.toFixed(3), center.z.toFixed(3));
+                } catch (boxErr) {
+                    console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
+                }
             });
             modelEl.addEventListener('model-error', (e) => {
                 console.error(`[MODEL ${i}] GAGAL dimuat (model-error)`, modelEl.getAttribute('src'), e.detail);
