@@ -1405,6 +1405,119 @@ function bukaMateri() {
     renderMateriContent();
 }
 
+// ================= HALAMAN VIDEO (LMS: tab per dimensi, embed YouTube) =================
+// CATATAN: link video dimensi ke-8 (Komunikasi) masih placeholder — ganti
+// "GANTI_ID_YOUTUBE_DIMENSI_8" begitu link-nya tersedia.
+const VIDEO_DIMENSI = [
+    {
+        no: 1,
+        judul: "Keimanan dan Ketakwaan terhadap Tuhan YME",
+        deskripsi: "Video ini membahas bagaimana keimanan dan ketakwaan tercermin dalam sikap dan perilaku sehari-hari siswa di lingkungan sekolah.",
+        youtubeId: "adYsVGq-_v0",
+    },
+    {
+        no: 2,
+        judul: "Kewargaan",
+        deskripsi: "Video ini menjelaskan pentingnya rasa cinta tanah air, kepedulian sosial, dan tanggung jawab sebagai warga negara yang baik.",
+        youtubeId: "xHa_94FU5M0",
+    },
+    {
+        no: 3,
+        judul: "Penalaran Kritis",
+        deskripsi: "Video ini mengajak siswa memahami cara berpikir kritis dan sistematis dalam menghadapi berbagai persoalan.",
+        youtubeId: "TBdlVatSVzk",
+    },
+    {
+        no: 4,
+        judul: "Kreativitas",
+        deskripsi: "Video ini menunjukkan bagaimana kreativitas dapat dikembangkan melalui inovasi dan pemecahan masalah secara out-of-the-box.",
+        youtubeId: "JwZksMFm_4w",
+    },
+    {
+        no: 5,
+        judul: "Kolaborasi",
+        deskripsi: "Video ini membahas pentingnya kerja sama tim dan komunikasi efektif dalam menyelesaikan tugas bersama.",
+        youtubeId: "UfSF_Hy9_fc",
+    },
+    {
+        no: 6,
+        judul: "Kemandirian",
+        deskripsi: "Video ini menjelaskan bagaimana sikap mandiri dan bertanggung jawab dapat dibangun sejak dini di lingkungan sekolah.",
+        youtubeId: "aHyWzKT3dO4",
+    },
+    {
+        no: 7,
+        judul: "Kesehatan",
+        deskripsi: "Video ini membahas pentingnya menjaga kesehatan fisik dan mental sebagai bagian dari gaya hidup siswa yang seimbang.",
+        youtubeId: "-fXQHUhFBZE",
+    },
+    {
+        no: 8,
+        judul: "Komunikasi",
+        deskripsi: "Video ini menjelaskan pentingnya kemampuan berkomunikasi yang baik, jelas, dan santun dalam kehidupan sehari-hari.",
+        youtubeId: "zWpByZwdJzw",
+    },
+];
+
+let videoIndexAktif = 0;
+
+function renderVideoTabs() {
+    const tabsEl = document.getElementById('videoTabs');
+    if (!tabsEl) return;
+    tabsEl.innerHTML = VIDEO_DIMENSI.map((d, i) => `
+        <button type="button" class="lms-tab ${i === videoIndexAktif ? 'lms-tab-active' : ''}" onclick="pilihVideoDimensi(${i})">
+            ${d.no}. ${d.judul}
+        </button>
+    `).join('');
+}
+
+function renderVideoContent() {
+    const contentEl = document.getElementById('videoContent');
+    if (!contentEl) return;
+    const d = VIDEO_DIMENSI[videoIndexAktif];
+
+    const embedSrc = d.youtubeId && !d.youtubeId.startsWith('GANTI_')
+        ? `https://www.youtube.com/embed/${d.youtubeId}`
+        : '';
+
+    const embedHtml = embedSrc
+        ? `<iframe src="${embedSrc}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" title="${d.judul}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+        : `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.2); color:#C9A961; font-size:13px; text-align:center; padding:16px; box-sizing:border-box;">Video untuk dimensi ini belum tersedia (menyusul)</div>`;
+
+    contentEl.innerHTML = `
+        <h3 class="lms-dimensi-title">${d.no}. ${d.judul}</h3>
+        <div style="position:relative; width:100%; padding-top:56.25%; margin-bottom:16px; border-radius:10px; overflow:hidden;">
+            ${embedHtml}
+        </div>
+        <div class="lms-section">
+            <span class="lms-section-badge lms-badge-deskripsi">Deskripsi</span>
+            <div class="lms-section-box deskripsi"><p>${d.deskripsi}</p></div>
+        </div>
+    `;
+    contentEl.scrollTop = 0;
+
+    document.getElementById('videoProgressLabel').textContent = `Video ${d.no} dari ${VIDEO_DIMENSI.length}`;
+    document.getElementById('videoProgressFill').style.width = `${(d.no / VIDEO_DIMENSI.length) * 100}%`;
+
+    const prevBtn = document.getElementById('videoPrevBtn');
+    const nextBtn = document.getElementById('videoNextBtn');
+    prevBtn.disabled = videoIndexAktif === 0;
+    nextBtn.textContent = videoIndexAktif === VIDEO_DIMENSI.length - 1 ? 'Selesai ✓' : 'Selanjutnya ›';
+}
+
+function pilihVideoDimensi(index) {
+    videoIndexAktif = index;
+    renderVideoTabs();
+    renderVideoContent();
+}
+
+function bukaVideo() {
+    videoIndexAktif = 0;
+    switchScreen('video-screen');
+    renderVideoTabs();
+    renderVideoContent();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const prevBtn = document.getElementById('lmsPrevBtn');
     const nextBtn = document.getElementById('lmsNextBtn');
@@ -1415,6 +1528,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof MATERI_DIMENSI === 'undefined') return;
         if (materiIndexAktif < MATERI_DIMENSI.length - 1) {
             pilihMateriDimensi(materiIndexAktif + 1);
+        } else {
+            switchScreen('main-menu');
+        }
+    });
+
+    const videoPrevBtn = document.getElementById('videoPrevBtn');
+    const videoNextBtn = document.getElementById('videoNextBtn');
+    if (videoPrevBtn) videoPrevBtn.addEventListener('click', () => {
+        if (videoIndexAktif > 0) pilihVideoDimensi(videoIndexAktif - 1);
+    });
+    if (videoNextBtn) videoNextBtn.addEventListener('click', () => {
+        if (videoIndexAktif < VIDEO_DIMENSI.length - 1) {
+            pilihVideoDimensi(videoIndexAktif + 1);
         } else {
             switchScreen('main-menu');
         }
