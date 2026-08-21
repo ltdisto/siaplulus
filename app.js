@@ -269,6 +269,7 @@ function initArMarkerListeners() {
                 console.log(`[MODEL ${i}] BERHASIL dimuat (model-loaded)`, modelEl.getAttribute('src'));
                 try {
                     const mesh = e.detail.model;
+                    mesh.updateMatrixWorld(true); // paksa hitung ulang matrix dulu, supaya bounding box tidak NaN
                     const box = new THREE.Box3().setFromObject(mesh);
                     const size = new THREE.Vector3();
                     box.getSize(size);
@@ -276,6 +277,8 @@ function initArMarkerListeners() {
                     box.getCenter(center);
                     console.log(`[MODEL ${i}] Ukuran bounding box asli:`, size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3),
                         '| Center:', center.x.toFixed(3), center.y.toFixed(3), center.z.toFixed(3));
+                    console.log(`[MODEL ${i}] scale entity saat ini:`, modelEl.object3D.scale.x, modelEl.object3D.scale.y, modelEl.object3D.scale.z);
+                    console.log(`[MODEL ${i}] visible?`, modelEl.object3D.visible, '| parent visible?', modelEl.object3D.parent ? modelEl.object3D.parent.visible : 'no parent');
                 } catch (boxErr) {
                     console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
                 }
@@ -287,6 +290,25 @@ function initArMarkerListeners() {
 
         targetEl.addEventListener('targetFound', () => {
             if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
+
+            // Diagnostik: cek visibilitas & ukuran model TEPAT saat marker
+            // terdeteksi (bukan cuma saat model selesai loading di awal) —
+            // ini momen paling relevan karena di sinilah model SEHARUSNYA
+            // benar-benar terlihat menempel di kartu marker.
+            if (modelEl && modelEl.object3D) {
+                const obj = modelEl.object3D;
+                obj.updateMatrixWorld(true);
+                const box = new THREE.Box3().setFromObject(obj);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                console.log(`[MODEL ${i}] SAAT TARGET FOUND — visible:`, obj.visible,
+                    '| world scale:', obj.getWorldScale(new THREE.Vector3()),
+                    '| world position:', obj.getWorldPosition(new THREE.Vector3()),
+                    '| bounding box size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3));
+                console.log(`[MODEL ${i}] parent (target-${i}) entity visible:`, targetEl.object3D.visible,
+                    '| parent world scale:', targetEl.object3D.getWorldScale(new THREE.Vector3()));
+            }
+
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
                 playAudioForTarget(i);
             } else if (!isMarkerLengkapTerjawab(i)) {
