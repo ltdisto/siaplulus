@@ -292,6 +292,22 @@ function initArMarkerListeners() {
                         }
                     });
                     console.log(`[MODEL ${i}] frustumCulled dimatikan di semua mesh anak.`);
+
+                    // DIAGNOSTIK: paksa material jadi warna solid terang (mengabaikan
+                    // tekstur asli & pengaruh cahaya), untuk memastikan apakah model
+                    // TERBUKTI ada secara geometri tapi materialnya yang bermasalah
+                    // (mis. tekstur rusak/transparan gara-gara proses kompresi dulu).
+                    let jumlahMeshDiwarnai = 0;
+                    mesh.traverse((node) => {
+                        if (node.isMesh) {
+                            node.material = new THREE.MeshBasicMaterial({
+                                color: 0xff0000, // merah terang, unlit (tidak butuh cahaya sama sekali)
+                                side: THREE.DoubleSide,
+                            });
+                            jumlahMeshDiwarnai++;
+                        }
+                    });
+                    console.log(`[MODEL ${i}] DIAGNOSTIK: ${jumlahMeshDiwarnai} mesh dipaksa jadi warna merah solid (MeshBasicMaterial).`);
                 } catch (boxErr) {
                     console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
                 }
