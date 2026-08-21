@@ -205,10 +205,15 @@ function buildArSceneHtml() {
     // sekarang di-load MANUAL lewat THREE.GLTFLoader() langsung di JS (lihat
     // muatModelManual()), lalu ditempel langsung ke object3D milik container
     // ini — melewati komponen a-gltf-model A-Frame sepenuhnya.
+    // PENTING: TIDAK ADA lagi <a-entity id="model-container-N"> pembungkus
+    // tambahan di sini. Terbukti lewat diagnostik lanjutan (cek rantai parent
+    // container -> #ar-scene.object3D) bahwa wadah tambahan itu OBJECT3D-NYA
+    // TERPUTUS dari scene sungguhan yang dirender (kemungkinan besar MindAR
+    // melakukan reparenting/pengelolaan internal terhadap anak-anak dari
+    // entity mindar-image-target, membuat referensi wadah kita jadi basi).
+    // Model sekarang ditempel LANGSUNG ke target-N itu sendiri.
     const targets = Array.from({ length: 8 }, (_, i) => `
-            <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-entity id="model-container-${i}"></a-entity>
-            </a-entity>`).join('');
+            <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}"></a-entity>`).join('');
 
     return `
         <a-scene
@@ -242,8 +247,10 @@ const DAFTAR_FILE_MODEL = [
 ];
 
 // Load ke-8 model 3D MANUAL lewat THREE.GLTFLoader (bypass komponen
-// a-gltf-model A-Frame sepenuhnya), lalu tempel langsung ke object3D
-// masing-masing container #model-container-N.
+// a-gltf-model A-Frame sepenuhnya), lalu tempel LANGSUNG ke object3D
+// masing-masing #target-N (BUKAN lagi ke wadah container terpisah — terbukti
+// wadah terpisah itu object3D-nya terputus dari scene yang sungguhan
+// dirender).
 function muatModelManual() {
     if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
         console.error('[MANUAL-LOAD] THREE.GLTFLoader tidak tersedia!');
@@ -256,7 +263,7 @@ function muatModelManual() {
         loader.load(
             file,
             (gltf) => {
-                const containerEl = document.querySelector(`#model-container-${i}`);
+                const containerEl = document.querySelector(`#target-${i}`);
                 if (!containerEl) {
                     console.error(`[MANUAL-LOAD ${i}] container tidak ditemukan!`);
                     return;
@@ -377,9 +384,10 @@ function initArMarkerListeners() {
         if (!targetEl) continue;
 
         // CATATAN: model 3D sekarang di-load MANUAL lewat THREE.GLTFLoader
-        // (lihat muatModelManual()), bukan lagi lewat <a-gltf-model> A-Frame.
-        // object3D-nya diambil dari container, bukan dari elemen a-gltf-model.
-        const modelContainerEl = document.querySelector(`#model-container-${i}`);
+        // (lihat muatModelManual()), ditempel LANGSUNG ke targetEl.object3D
+        // (bukan lagi ke wadah container terpisah yang ternyata terputus dari
+        // scene sungguhan). modelContainerEl = targetEl itu sendiri di sini.
+        const modelContainerEl = targetEl;
 
         targetEl.addEventListener('targetFound', () => {
             if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
