@@ -274,8 +274,14 @@ function initArMarkerListeners() {
 
         targetEl.addEventListener('targetLost', () => {
             if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
-            const btn = document.getElementById('ar-next-btn');
-            if (btn) btn.style.display = 'none';
+            // CATATAN: tombol Next SENGAJA TIDAK disembunyikan lagi di sini.
+            // Sebelumnya, kalau marker sempat "hilang" sesaat dari pandangan
+            // kamera (tangan/HP bergerak sedikit saat audio masih diputar),
+            // tombol Next ikut hilang dan siswa jadi tidak bisa lanjut ke
+            // pertanyaan meski marker itu sudah sempat ter-trigger. Begitu
+            // sebuah marker sudah pernah trigger (markerTriggered[i]=true)
+            // dan belum terjawab, tombol Next tetap harus tersedia terlepas
+            // dari status tracking kamera saat itu.
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
                 const a = document.getElementById('assess-audio-' + i);
                 if (a) a.pause();
