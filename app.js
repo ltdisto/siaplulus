@@ -307,6 +307,17 @@ function initArMarkerListeners() {
                     '| bounding box size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3));
                 console.log(`[MODEL ${i}] parent (target-${i}) entity visible:`, targetEl.object3D.visible,
                     '| parent world scale:', targetEl.object3D.getWorldScale(new THREE.Vector3()));
+
+                // Cek susulan beberapa kali — kalau-kalau MindAR baru MENGANIMASIKAN
+                // scale dari 0 ke 1 secara bertahap (bukan instan), jadi baru kelihatan
+                // beberapa ratus ms setelah targetFound, bukan tepat di momen event ini.
+                [200, 500, 1000, 2000].forEach(delay => {
+                    setTimeout(() => {
+                        const sc = targetEl.object3D.getWorldScale(new THREE.Vector3());
+                        console.log(`[MODEL ${i}] +${delay}ms — parent visible:`, targetEl.object3D.visible,
+                            '| parent world scale:', sc.x.toFixed(3), sc.y.toFixed(3), sc.z.toFixed(3));
+                    }, delay);
+                });
             }
 
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
