@@ -263,6 +263,16 @@ function initArMarkerListeners() {
         const targetEl = document.querySelector('#target-' + i);
         if (!targetEl) continue;
 
+        const modelEl = targetEl.querySelector('a-gltf-model');
+        if (modelEl) {
+            modelEl.addEventListener('model-loaded', () => {
+                console.log(`[MODEL ${i}] BERHASIL dimuat (model-loaded)`, modelEl.getAttribute('src'));
+            });
+            modelEl.addEventListener('model-error', (e) => {
+                console.error(`[MODEL ${i}] GAGAL dimuat (model-error)`, modelEl.getAttribute('src'), e.detail);
+            });
+        }
+
         targetEl.addEventListener('targetFound', () => {
             if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
