@@ -264,9 +264,25 @@ function muatModelManual() {
                 const model = gltf.scene;
                 model.position.set(0, 0, 0.3);
                 model.scale.set(1, 1, 1);
+
+                // DIAGNOSTIK: paksa material jadi warna solid terang, mengabaikan
+                // depth buffer, render paling depan — cara paling agresif untuk
+                // memastikan apakah geometrinya BENAR-BENAR dirender atau tidak,
+                // terlepas dari isu material/tekstur/depth apa pun.
+                let jumlahMeshDiwarnai = 0;
                 model.traverse((node) => {
-                    if (node.isMesh) node.frustumCulled = false;
+                    if (node.isMesh) {
+                        node.frustumCulled = false;
+                        node.material = new THREE.MeshBasicMaterial({
+                            color: 0x00ff00, // hijau terang kali ini (biar beda dari percobaan merah sebelumnya)
+                            side: THREE.DoubleSide,
+                            depthTest: false,
+                        });
+                        node.renderOrder = 999;
+                        jumlahMeshDiwarnai++;
+                    }
                 });
+                console.log(`[MANUAL-LOAD ${i}] DIAGNOSTIK: ${jumlahMeshDiwarnai} mesh dipaksa jadi HIJAU solid + depthTest:false.`);
 
                 // Animasi rotasi manual (menggantikan atribut animation= yang
                 // sebelumnya ada di <a-gltf-model>)
