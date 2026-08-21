@@ -401,6 +401,24 @@ function waitForCameraVideoThenHideOverlay() {
             setTimeout(() => {
                 console.log('[AR-DEBUG] cek susulan 500ms setelah selesaikan(): canvas =',
                     canvasEl.width, 'x', canvasEl.height);
+
+                // Diagnostik BARU: pastikan render loop THREE.js benar-benar
+                // jalan terus-menerus (bukan cuma sekali gambar lalu berhenti).
+                // Kalau frame counter TIDAK bertambah, artinya render loop macet
+                // meski canvas sudah berukuran benar — video kamera tidak akan
+                // pernah ter-update ke layar walau semuanya "siap" secara teknis.
+                const renderer = sceneElNow.renderer;
+                if (renderer && renderer.info && renderer.info.render) {
+                    const frame0 = renderer.info.render.frame;
+                    console.log('[AR-DEBUG] renderer.info.render.frame saat ini:', frame0);
+                    setTimeout(() => {
+                        const frame1 = renderer.info.render.frame;
+                        console.log('[AR-DEBUG] renderer.info.render.frame setelah 1 detik:', frame1,
+                            '(bertambah', frame1 - frame0, 'frame). Kalau 0, render loop MACET.');
+                    }, 1000);
+                } else {
+                    console.log('[AR-DEBUG] tidak bisa akses renderer.info.render untuk cek frame counter.');
+                }
             }, 500);
         }
 
