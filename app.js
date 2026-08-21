@@ -396,6 +396,24 @@ function waitForCameraVideoThenHideOverlay() {
                 console.log('[AR-DEBUG] canvas sudah punya ukuran valid, TIDAK perlu resize.');
             }
 
+            // FIX BARU: elemen <video> (sumber gambar kamera) konsisten berukuran
+            // 0x0 (style inline width/height:0px) di setiap pengecekan sebelumnya.
+            // Kalau canvas ternyata TRANSPARAN (bukan menggambar video sebagai
+            // tekstur, melainkan video tampil langsung lewat DOM biasa di belakang
+            // canvas), video 0x0 = tidak ada apa pun yang bisa terlihat sama sekali,
+            // walau data video-nya sendiri sudah "siap". Paksa video full-screen.
+            const videoElNow = sceneElNow.querySelector('video') || document.querySelector('#ar-screen video');
+            if (videoElNow) {
+                console.log('[AR-DEBUG] video style SEBELUM dipaksa:', videoElNow.style.width, videoElNow.style.height, videoElNow.style.zIndex);
+                videoElNow.style.width = '100vw';
+                videoElNow.style.height = '100vh';
+                videoElNow.style.objectFit = 'cover';
+                console.log('[AR-DEBUG] video style SESUDAH dipaksa:', videoElNow.style.width, videoElNow.style.height);
+                console.log('[AR-DEBUG] video.videoWidth asli (resolusi native kamera):', videoElNow.videoWidth, 'x', videoElNow.videoHeight);
+            } else {
+                console.log('[AR-DEBUG] videoElNow tidak ditemukan saat selesaikan().');
+            }
+
             // Cek susulan 500ms kemudian — kalau-kalau ada proses lain (mis. MindAR
             // sendiri) yang menimpa balik ukuran canvas jadi 0 setelah kita perbaiki.
             setTimeout(() => {
