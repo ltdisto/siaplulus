@@ -376,6 +376,24 @@ function initArMarkerListeners() {
                     '| bounding box size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3));
                 console.log(`[MODEL ${i}] parent (target-${i}) entity visible SEKARANG:`, targetEl.object3D.visible,
                     '| parent world scale:', targetEl.object3D.getWorldScale(new THREE.Vector3()));
+
+                // Cek susulan — scale MindAR sering masih 0 tepat di momen event
+                // targetFound, baru terisi beberapa ratus ms kemudian (sesuai pola
+                // yang berulang kali kita lihat sebelumnya dengan a-gltf-model).
+                [200, 500, 1000, 2000].forEach(delay => {
+                    setTimeout(() => {
+                        obj.updateMatrixWorld(true);
+                        const ws = obj.getWorldScale(new THREE.Vector3());
+                        const wp = obj.getWorldPosition(new THREE.Vector3());
+                        const b2 = new THREE.Box3().setFromObject(obj);
+                        const s2 = new THREE.Vector3();
+                        b2.getSize(s2);
+                        console.log(`[MODEL ${i}] +${delay}ms — visible:`, obj.visible,
+                            '| world scale:', ws.x.toFixed(4), ws.y.toFixed(4), ws.z.toFixed(4),
+                            '| world position:', wp.x.toFixed(3), wp.y.toFixed(3), wp.z.toFixed(3),
+                            '| bbox tampil:', s2.x.toFixed(3), s2.y.toFixed(3), s2.z.toFixed(3));
+                    }, delay);
+                });
             }
 
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
