@@ -191,28 +191,23 @@ function switchScreen(screenId) {
 let arSceneSudahDisuntik = false;
 
 function buildArSceneHtml() {
-    const modelFiles = [
-        '1__Keimanan_dan_Ketakwaan_final.glb',
-        '2__Kewargaan_final.glb',
-        '3__Penalaran_Kritis_final.glb',
-        '4__Kreatifitas_final.glb',
-        '5__Kolaborasi_final.glb',
-        '6__kemandirian_final.glb',
-        '7__Kesehatan_final.glb',
-        '8__Komunikasi_final.glb',
-    ];
-
     const audioTags = Array.from({ length: 8 }, (_, i) =>
         `<audio id="assess-audio-${i}" src="soal${i + 1}.mp3" preload="none"></audio>`
     ).join('\n                ');
 
-    const assetItems = modelFiles.map((f, i) =>
-        `<a-asset-item id="model-${i}" src="${f}"></a-asset-item>`
-    ).join('\n                ');
-
-    const targets = modelFiles.map((_, i) => `
+    // PENTING: <a-gltf-model> TIDAK dipakai lagi di sini. Setelah investigasi
+    // panjang, model 3D lewat komponen a-gltf-model A-Frame TIDAK PERNAH
+    // benar-benar masuk ke render list Three.js di kombinasi setup kita
+    // (scene disuntik dinamis + lazy load) — terbukti dari berbagai diagnostik
+    // (material dipaksa warna solid + depthTest:false + renderOrder:999 pun
+    // tetap tidak terlihat, artinya bukan soal visual/material, tapi objek
+    // memang tidak pernah benar-benar dirender). Sebagai gantinya, model
+    // sekarang di-load MANUAL lewat THREE.GLTFLoader() langsung di JS (lihat
+    // muatModelManual()), lalu ditempel langsung ke object3D milik container
+    // ini — melewati komponen a-gltf-model A-Frame sepenuhnya.
+    const targets = Array.from({ length: 8 }, (_, i) => `
             <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0.3" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+                <a-entity id="model-container-${i}"></a-entity>
             </a-entity>`).join('');
 
     return `
@@ -226,12 +221,70 @@ function buildArSceneHtml() {
 
             <a-assets timeout="20000">
                 ${audioTags}
-                ${assetItems}
             </a-assets>
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             ${targets}
         </a-scene>
     `;
+}
+
+// Daftar file model 3D — dipakai oleh muatModelManual(), TERPISAH dari
+// a-assets A-Frame (di-load manual lewat THREE.GLTFLoader).
+const DAFTAR_FILE_MODEL = [
+    '1__Keimanan_dan_Ketakwaan_final.glb',
+    '2__Kewargaan_final.glb',
+    '3__Penalaran_Kritis_final.glb',
+    '4__Kreatifitas_final.glb',
+    '5__Kolaborasi_final.glb',
+    '6__kemandirian_final.glb',
+    '7__Kesehatan_final.glb',
+    '8__Komunikasi_final.glb',
+];
+
+// Load ke-8 model 3D MANUAL lewat THREE.GLTFLoader (bypass komponen
+// a-gltf-model A-Frame sepenuhnya), lalu tempel langsung ke object3D
+// masing-masing container #model-container-N.
+function muatModelManual() {
+    if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
+        console.error('[MANUAL-LOAD] THREE.GLTFLoader tidak tersedia!');
+        return;
+    }
+    const loader = new THREE.GLTFLoader();
+
+    DAFTAR_FILE_MODEL.forEach((file, i) => {
+        console.log(`[MANUAL-LOAD ${i}] mulai load`, file);
+        loader.load(
+            file,
+            (gltf) => {
+                const containerEl = document.querySelector(`#model-container-${i}`);
+                if (!containerEl) {
+                    console.error(`[MANUAL-LOAD ${i}] container tidak ditemukan!`);
+                    return;
+                }
+                const model = gltf.scene;
+                model.position.set(0, 0, 0.3);
+                model.scale.set(1, 1, 1);
+                model.traverse((node) => {
+                    if (node.isMesh) node.frustumCulled = false;
+                });
+
+                // Animasi rotasi manual (menggantikan atribut animation= yang
+                // sebelumnya ada di <a-gltf-model>)
+                const putar = () => {
+                    model.rotation.y += 0.008;
+                    requestAnimationFrame(putar);
+                };
+                putar();
+
+                containerEl.object3D.add(model);
+                console.log(`[MANUAL-LOAD ${i}] BERHASIL ditempel ke scene.`, model);
+            },
+            undefined,
+            (err) => {
+                console.error(`[MANUAL-LOAD ${i}] GAGAL load:`, file, err);
+            }
+        );
+    });
 }
 
 function injectArSceneIfNeeded() {
@@ -242,6 +295,7 @@ function injectArSceneIfNeeded() {
     arSceneSudahDisuntik = true;
     initArMarkerListeners();
     initArAudioDebugListeners();
+    muatModelManual();
 }
 
 // Listener marker (targetFound/targetLost) — dipindah dari DOMContentLoaded ke
@@ -259,99 +313,69 @@ function initArMarkerListeners() {
         return true;
     };
 
+    // CATATAN: setInterval yang memaksa visible=true SECARA TERUS-MENERUS
+    // (di luar event handler) SEMPAT dicoba di sini, tapi TERBUKTI merusak
+    // mekanisme deteksi MindAR sendiri — targetFound event berhenti total
+    // ter-trigger (kemungkinan MindAR membandingkan state visible SEBELUM/
+    // SESUDAH untuk memutuskan kapan men-dispatch event, dan pemaksaan
+    // eksternal yang mendahului bikin MindAR tidak pernah "melihat" transisi
+    // dari tidak-terlihat ke terlihat). Sudah dihapus — visible=true HANYA
+    // dipaksa di DALAM event handler targetFound (baris di bawah), setelah
+    // event itu benar-benar ter-trigger oleh MindAR, jadi tidak mengganggu
+    // proses deteksinya.
+    const intervalPaksaVisible = {}; // simpan interval ID per marker (0-7)
+
     for (let i = 0; i < 8; i++) {
         const targetEl = document.querySelector('#target-' + i);
         if (!targetEl) continue;
 
-        const modelEl = targetEl.querySelector('a-gltf-model');
-        if (modelEl) {
-            modelEl.addEventListener('model-loaded', (e) => {
-                console.log(`[MODEL ${i}] BERHASIL dimuat (model-loaded)`, modelEl.getAttribute('src'));
-                try {
-                    const mesh = e.detail.model;
-                    mesh.updateMatrixWorld(true); // paksa hitung ulang matrix dulu, supaya bounding box tidak NaN
-                    const box = new THREE.Box3().setFromObject(mesh);
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const center = new THREE.Vector3();
-                    box.getCenter(center);
-                    console.log(`[MODEL ${i}] Ukuran bounding box asli:`, size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3),
-                        '| Center:', center.x.toFixed(3), center.y.toFixed(3), center.z.toFixed(3));
-                    console.log(`[MODEL ${i}] scale entity saat ini:`, modelEl.object3D.scale.x, modelEl.object3D.scale.y, modelEl.object3D.scale.z);
-                    console.log(`[MODEL ${i}] visible?`, modelEl.object3D.visible, '| parent visible?', modelEl.object3D.parent ? modelEl.object3D.parent.visible : 'no parent');
-
-                    // FIX: matikan frustum culling di SETIAP mesh di dalam model.
-                    // THREE.js kadang salah "membuang" objek dari render kalau bounding
-                    // sphere/box sempat terhitung NaN atau tidak stabil di momen tertentu
-                    // (persis yang kita lihat di log "SAAT TARGET FOUND" — bounding box NaN).
-                    // Mematikan frustumCulled memaksa objek SELALU dicoba digambar, tidak
-                    // peduli hasil kalkulasi bounding-nya.
-                    mesh.traverse((node) => {
-                        if (node.isMesh) {
-                            node.frustumCulled = false;
-                        }
-                    });
-                    console.log(`[MODEL ${i}] frustumCulled dimatikan di semua mesh anak.`);
-                } catch (boxErr) {
-                    console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
-                }
-            });
-            modelEl.addEventListener('model-error', (e) => {
-                console.error(`[MODEL ${i}] GAGAL dimuat (model-error)`, modelEl.getAttribute('src'), e.detail);
-            });
-        }
+        // CATATAN: model 3D sekarang di-load MANUAL lewat THREE.GLTFLoader
+        // (lihat muatModelManual()), bukan lagi lewat <a-gltf-model> A-Frame.
+        // object3D-nya diambil dari container, bukan dari elemen a-gltf-model.
+        const modelContainerEl = document.querySelector(`#model-container-${i}`);
 
         targetEl.addEventListener('targetFound', () => {
             if (scanHint) scanHint.textContent = `Marker ${i + 1} terdeteksi! Tekan "Next" untuk menjawab.`;
+
+            // FIX UTAMA: paksa visible=true pada target DAN container model.
+            // Ditemukan bahwa targetEl.object3D.visible KONSISTEN tetap "false"
+            // bahkan setelah marker terdeteksi (targetFound) di setiap log
+            // diagnostik sepanjang investigasi ini — walau audio & kuis tetap
+            // trigger dengan benar (logic JS kita jalan normal). Kalau parent
+            // object3D punya visible=false, Three.js MELEWATI SELURUH isinya
+            // saat render — apa pun yang ditaruh di dalamnya (model 3D, warna
+            // solid, skala berapa pun) TIDAK AKAN PERNAH terlihat. Ini kemungkinan
+            // besar akar masalah sesungguhnya di balik semua percobaan sebelumnya.
+            targetEl.object3D.visible = true;
+            targetEl.object3D.traverse((node) => { node.visible = true; });
+
+            // Mulai paksaan berkelanjutan HANYA SETELAH targetFound benar-benar
+            // terjadi (jadi tidak mengganggu proses deteksi MindAR), untuk jaga-jaga
+            // kalau MindAR sempat menimpa balik visible=false di frame-frame
+            // berikutnya SELAMA marker ini masih dalam pandangan kamera.
+            if (intervalPaksaVisible[i]) clearInterval(intervalPaksaVisible[i]);
+            intervalPaksaVisible[i] = setInterval(() => {
+                if (targetEl.object3D) targetEl.object3D.visible = true;
+                if (modelContainerEl && modelContainerEl.object3D) modelContainerEl.object3D.visible = true;
+            }, 100);
 
             // Diagnostik: cek visibilitas & ukuran model TEPAT saat marker
             // terdeteksi (bukan cuma saat model selesai loading di awal) —
             // ini momen paling relevan karena di sinilah model SEHARUSNYA
             // benar-benar terlihat menempel di kartu marker.
-            if (modelEl && modelEl.object3D) {
-                const obj = modelEl.object3D;
+            if (modelContainerEl && modelContainerEl.object3D) {
+                const obj = modelContainerEl.object3D;
                 obj.updateMatrixWorld(true);
                 const box = new THREE.Box3().setFromObject(obj);
                 const size = new THREE.Vector3();
                 box.getSize(size);
-                console.log(`[MODEL ${i}] SAAT TARGET FOUND — visible:`, obj.visible,
+                console.log(`[MODEL ${i}] SAAT TARGET FOUND (setelah paksa visible=true) — visible:`, obj.visible,
+                    '| jumlah anak object3D:', obj.children.length,
                     '| world scale:', obj.getWorldScale(new THREE.Vector3()),
                     '| world position:', obj.getWorldPosition(new THREE.Vector3()),
                     '| bounding box size:', size.x.toFixed(3), size.y.toFixed(3), size.z.toFixed(3));
-                console.log(`[MODEL ${i}] parent (target-${i}) entity visible:`, targetEl.object3D.visible,
+                console.log(`[MODEL ${i}] parent (target-${i}) entity visible SEKARANG:`, targetEl.object3D.visible,
                     '| parent world scale:', targetEl.object3D.getWorldScale(new THREE.Vector3()));
-
-                // Cek susulan beberapa kali — kalau-kalau MindAR baru MENGANIMASIKAN
-                // scale dari 0 ke 1 secara bertahap (bukan instan), jadi baru kelihatan
-                // beberapa ratus ms setelah targetFound, bukan tepat di momen event ini.
-                // PENTING: cek scale GABUNGAN model itu sendiri (parent x local), bukan
-                // cuma parent saja — itu yang benar-benar menentukan ukuran tampilan akhir.
-                [200, 500, 1000, 2000].forEach(delay => {
-                    setTimeout(() => {
-                        obj.updateMatrixWorld(true);
-                        const worldScale = obj.getWorldScale(new THREE.Vector3());
-                        const worldPos = obj.getWorldPosition(new THREE.Vector3());
-                        const boxNow = new THREE.Box3().setFromObject(obj);
-                        const sizeNow = new THREE.Vector3();
-                        boxNow.getSize(sizeNow);
-                        console.log(`[MODEL ${i}] +${delay}ms MODEL (gabungan) — world scale:`,
-                            worldScale.x.toFixed(6), worldScale.y.toFixed(6), worldScale.z.toFixed(6),
-                            '| world position:', worldPos.x.toFixed(3), worldPos.y.toFixed(3), worldPos.z.toFixed(3),
-                            '| bbox tampil:', sizeNow.x.toFixed(3), sizeNow.y.toFixed(3), sizeNow.z.toFixed(3));
-
-                        // Cek juga posisi & clipping plane kamera, untuk pastikan model
-                        // tidak "terpotong" karena terlalu dekat/jauh dari kamera.
-                        const camEl = document.querySelector('#ar-scene [camera]') || document.querySelector('a-camera');
-                        if (camEl && camEl.getObject3D && camEl.getObject3D('camera')) {
-                            const cam = camEl.getObject3D('camera');
-                            const camPos = cam.getWorldPosition(new THREE.Vector3());
-                            const distance = camPos.distanceTo(worldPos);
-                            console.log(`[MODEL ${i}] +${delay}ms kamera — near:`, cam.near, 'far:', cam.far,
-                                '| posisi kamera:', camPos.x.toFixed(3), camPos.y.toFixed(3), camPos.z.toFixed(3),
-                                '| jarak kamera ke model:', distance.toFixed(3));
-                        }
-                    }, delay);
-                });
             }
 
             if (!markerTriggered[i] && !isMarkerLengkapTerjawab(i)) {
@@ -363,6 +387,15 @@ function initArMarkerListeners() {
 
         targetEl.addEventListener('targetLost', () => {
             if (scanHint) scanHint.textContent = 'Arahkan kamera ke salah satu kartu marker (1-8)...';
+
+            // Hentikan interval pemaksaan visible untuk marker ini (kalau ada),
+            // supaya tidak terus jalan sia-sia setelah marker tidak lagi
+            // terlacak — dan supaya tidak mengganggu deteksi berikutnya.
+            if (intervalPaksaVisible[i]) {
+                clearInterval(intervalPaksaVisible[i]);
+                intervalPaksaVisible[i] = null;
+            }
+
             // CATATAN: tombol Next SENGAJA TIDAK disembunyikan lagi di sini.
             // Sebelumnya, kalau marker sempat "hilang" sesaat dari pandangan
             // kamera (tangan/HP bergerak sedikit saat audio masih diputar),
