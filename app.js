@@ -212,7 +212,7 @@ function buildArSceneHtml() {
 
     const targets = modelFiles.map((_, i) => `
             <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0" scale="0.00125 0.00125 0.00125" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
             </a-entity>`).join('');
 
     return `
@@ -279,6 +279,19 @@ function initArMarkerListeners() {
                         '| Center:', center.x.toFixed(3), center.y.toFixed(3), center.z.toFixed(3));
                     console.log(`[MODEL ${i}] scale entity saat ini:`, modelEl.object3D.scale.x, modelEl.object3D.scale.y, modelEl.object3D.scale.z);
                     console.log(`[MODEL ${i}] visible?`, modelEl.object3D.visible, '| parent visible?', modelEl.object3D.parent ? modelEl.object3D.parent.visible : 'no parent');
+
+                    // FIX: matikan frustum culling di SETIAP mesh di dalam model.
+                    // THREE.js kadang salah "membuang" objek dari render kalau bounding
+                    // sphere/box sempat terhitung NaN atau tidak stabil di momen tertentu
+                    // (persis yang kita lihat di log "SAAT TARGET FOUND" — bounding box NaN).
+                    // Mematikan frustumCulled memaksa objek SELALU dicoba digambar, tidak
+                    // peduli hasil kalkulasi bounding-nya.
+                    mesh.traverse((node) => {
+                        if (node.isMesh) {
+                            node.frustumCulled = false;
+                        }
+                    });
+                    console.log(`[MODEL ${i}] frustumCulled dimatikan di semua mesh anak.`);
                 } catch (boxErr) {
                     console.error(`[MODEL ${i}] Gagal hitung bounding box:`, boxErr);
                 }
