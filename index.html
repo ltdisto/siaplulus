@@ -321,13 +321,65 @@
         <div id="progress-hint" class="scan-hint" style="top:45px; font-size:12px;">Terjawab: 0/8</div>
         <button type="button" id="ar-next-btn" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); width:auto; padding:14px 40px; z-index:15;">Next</button>
 
-        <!-- <a-scene> SENGAJA TIDAK ditulis langsung di sini. HTML-nya baru
-             disuntikkan oleh app.js (lihat buildArSceneHtml()) TEPAT SAAT siswa
-             klik "Mulai Asesmen" — supaya ke-8 model .glb (~30MB) TIDAK ikut
-             terdownload saat halaman pertama kali dibuka (Opening/Login), yang
-             sebelumnya menyebabkan halaman terlihat "putih"/macet karena browser
-             sibuk mendownload+memproses puluhan MB di awal. -->
-        <div id="ar-scene-slot"></div>
+        <!-- <a-scene> STATIS lagi di sini (bukan disuntikkan dinamis) — untuk
+             menguji definitif apakah lazy-injection adalah penyebab model 3D
+             tidak pernah muncul. Konsekuensi: 8 model .glb (~30MB) ikut
+             terdownload sejak halaman dibuka (bukan lagi saat "Mulai Asesmen"
+             diklik) — trade-off performa ini akan dioptimasi ulang SETELAH
+             bug utama model 3D benar-benar teratasi. -->
+        <a-scene
+            id="ar-scene"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false;"
+            loading-screen="enabled: false"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            renderer="colorManagement: true;">
+
+            <a-assets timeout="20000">
+                <audio id="assess-audio-0" src="soal1.mp3" preload="none"></audio>
+                <audio id="assess-audio-1" src="soal2.mp3" preload="none"></audio>
+                <audio id="assess-audio-2" src="soal3.mp3" preload="none"></audio>
+                <audio id="assess-audio-3" src="soal4.mp3" preload="none"></audio>
+                <audio id="assess-audio-4" src="soal5.mp3" preload="none"></audio>
+                <audio id="assess-audio-5" src="soal6.mp3" preload="none"></audio>
+                <audio id="assess-audio-6" src="soal7.mp3" preload="none"></audio>
+                <audio id="assess-audio-7" src="soal8.mp3" preload="none"></audio>
+                <a-asset-item id="model-0" src="1__Keimanan_dan_Ketakwaan_final.glb"></a-asset-item>
+                <a-asset-item id="model-1" src="2__Kewargaan_final.glb"></a-asset-item>
+                <a-asset-item id="model-2" src="3__Penalaran_Kritis_final.glb"></a-asset-item>
+                <a-asset-item id="model-3" src="4__Kreatifitas_final.glb"></a-asset-item>
+                <a-asset-item id="model-4" src="5__Kolaborasi_final.glb"></a-asset-item>
+                <a-asset-item id="model-5" src="6__kemandirian_final.glb"></a-asset-item>
+                <a-asset-item id="model-6" src="7__Kesehatan_final.glb"></a-asset-item>
+                <a-asset-item id="model-7" src="8__Komunikasi_final.glb"></a-asset-item>
+            </a-assets>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+            <a-entity id="target-0" mindar-image-target="targetIndex: 0">
+                <a-gltf-model src="#model-0" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-1" mindar-image-target="targetIndex: 1">
+                <a-gltf-model src="#model-1" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-2" mindar-image-target="targetIndex: 2">
+                <a-gltf-model src="#model-2" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-3" mindar-image-target="targetIndex: 3">
+                <a-gltf-model src="#model-3" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-4" mindar-image-target="targetIndex: 4">
+                <a-gltf-model src="#model-4" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-5" mindar-image-target="targetIndex: 5">
+                <a-gltf-model src="#model-5" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-6" mindar-image-target="targetIndex: 6">
+                <a-gltf-model src="#model-6" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+            <a-entity id="target-7" mindar-image-target="targetIndex: 7">
+                <a-gltf-model src="#model-7" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
+            </a-entity>
+        </a-scene>
     </div>
 
     <!-- 4. LAYAR KUIS -->

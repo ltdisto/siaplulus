@@ -185,67 +185,14 @@ function switchScreen(screenId) {
     if (screenId === 'main-menu') updateDashboardProgressCard();
 }
 
-// ================= INJEKSI LAZY <a-scene> (baru dimasukkan ke DOM saat
-// "Mulai Asesmen" diklik, supaya 8 model .glb (~30MB) TIDAK ikut terdownload
-// saat halaman pertama kali dibuka) =================
-let arSceneSudahDisuntik = false;
-
-function buildArSceneHtml() {
-    const audioTags = Array.from({ length: 8 }, (_, i) =>
-        `<audio id="assess-audio-${i}" src="soal${i + 1}.mp3" preload="none"></audio>`
-    ).join('\n                ');
-
-    const assetItems = DAFTAR_FILE_MODEL.map((f, i) =>
-        `<a-asset-item id="model-${i}" src="${f}"></a-asset-item>`
-    ).join('\n                ');
-
-    // RESET BERSIH: kembali ke pola paling sederhana yang terbukti berfungsi
-    // di file referensi Anda — <a-gltf-model> langsung, TANPA kompensasi
-    // scale/position, TANPA hack visible, TANPA setInterval, TANPA diagnostic
-    // bertumpuk. scale="1 1 1" position="0 0 0.3" adalah nilai desain awal.
-    const targets = DAFTAR_FILE_MODEL.map((_, i) => `
-            <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model src="#model-${i}" position="0 0 0.3" scale="1 1 1"></a-gltf-model>
-            </a-entity>`).join('');
-
-    return `
-        <a-scene
-            id="ar-scene"
-            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; autoStart: false;"
-            loading-screen="enabled: false"
-            vr-mode-ui="enabled: false"
-            device-orientation-permission-ui="enabled: false"
-            renderer="colorManagement: true;">
-
-            <a-assets timeout="20000">
-                ${audioTags}
-                ${assetItems}
-            </a-assets>
-            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-            ${targets}
-        </a-scene>
-    `;
-}
-
-const DAFTAR_FILE_MODEL = [
-    '1__Keimanan_dan_Ketakwaan_final.glb',
-    '2__Kewargaan_final.glb',
-    '3__Penalaran_Kritis_final.glb',
-    '4__Kreatifitas_final.glb',
-    '5__Kolaborasi_final.glb',
-    '6__kemandirian_final.glb',
-    '7__Kesehatan_final.glb',
-    '8__Komunikasi_final.glb',
-];
-
+// ================= <a-scene> SEKARANG STATIS (bukan lagi disuntikkan
+// dinamis) — untuk menguji apakah lazy-injection adalah penyebab model 3D
+// tidak muncul. Listener marker/audio langsung dipasang sekali saat halaman
+// dimuat (DOMContentLoaded), bukan menunggu klik "Mulai Asesmen" lagi. =================
 function injectArSceneIfNeeded() {
-    if (arSceneSudahDisuntik) return;
-    const slot = document.getElementById('ar-scene-slot');
-    if (!slot) return;
-    slot.innerHTML = buildArSceneHtml();
-    arSceneSudahDisuntik = true;
-    initArMarkerListeners();
-    initArAudioDebugListeners();
+    // Sengaja dikosongkan — scene sudah statis di index.html, tidak perlu
+    // disuntikkan lagi. Fungsi ini dibiarkan ada (no-op) supaya pemanggilan
+    // di mulaiAssesmen() tidak perlu diubah/dihapus satu-satu.
 }
 
 // Listener marker (targetFound/targetLost) — VERSI BERSIH, minimal, tanpa
@@ -1528,6 +1475,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // sama sekali saat DOMContentLoaded jika belum pernah klik "Mulai Asesmen".
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        // Scene AR sekarang statis (ada sejak halaman dimuat), jadi listener
+        // marker/audio dipasang sekali di sini, bukan lagi menunggu klik
+        // "Mulai Asesmen".
+        initArMarkerListeners();
+        initArAudioDebugListeners();
+
         const nextBtn = document.getElementById('quiz-next-btn');
         if (nextBtn) nextBtn.addEventListener('click', goToNextQuestion);
 
