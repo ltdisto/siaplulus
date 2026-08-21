@@ -212,13 +212,13 @@ function buildArSceneHtml() {
 
     const targets = modelFiles.map((_, i) => `
             <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0.3" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0" scale="0.00125 0.00125 0.00125" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
             </a-entity>`).join('');
 
     return `
         <a-scene
             id="ar-scene"
-            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; uiScanning: no; autoStart: false;"
+            mindar-image="imageTargetSrc: mind1.mind; uiLoading: no; uiError: no; uiScanning: no; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 2; missTolerance: 5;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             device-orientation-permission-ui="enabled: false"
