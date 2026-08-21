@@ -212,7 +212,7 @@ function buildArSceneHtml() {
 
     const targets = modelFiles.map((_, i) => `
             <a-entity id="target-${i}" mindar-image-target="targetIndex: ${i}">
-                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0" scale="0.00043 0.00043 0.00043" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
+                <a-gltf-model class="ar-3d-placeholder" src="#model-${i}" position="0 0 0.3" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
             </a-entity>`).join('');
 
     return `
