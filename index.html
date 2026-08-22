@@ -186,52 +186,32 @@
     <!-- 2b. MATERI (LMS Premium: sidebar/tab per dimensi) -->
     <div id="materi-screen" class="screen">
         <div class="lms-container">
-            <div class="lms-header">
+            <div class="lms-header lms-header-simple">
+                <button type="button" class="lms-back-icon" onclick="switchScreen('main-menu')" title="Kembali ke Menu Utama" aria-label="Kembali ke Menu Utama">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
                 <h2 class="lms-title">Materi Delapan Dimensi</h2>
-                <div class="lms-progress-wrap">
-                    <span id="lmsProgressLabel">Dimensi 1 dari 8</span>
-                    <div class="lms-progress-track">
-                        <div class="lms-progress-fill" id="lmsProgressFill" style="width:12.5%;"></div>
-                    </div>
-                </div>
             </div>
 
             <div class="lms-tabs" id="lmsTabs"></div>
 
             <div class="lms-content" id="lmsContent"></div>
-
-            <div class="lms-nav">
-                <button type="button" class="lms-nav-btn" id="lmsPrevBtn">‹ Sebelumnya</button>
-                <button type="button" class="lms-nav-btn lms-nav-btn-primary" id="lmsNextBtn">Selanjutnya ›</button>
-            </div>
-
-            <button type="button" onclick="switchScreen('main-menu')" style="margin-top:14px;">Kembali ke Menu Utama</button>
         </div>
     </div>
 
     <!-- 2c. VIDEO -->
     <div id="video-screen" class="screen">
         <div class="lms-container">
-            <div class="lms-header">
+            <div class="lms-header lms-header-simple">
+                <button type="button" class="lms-back-icon" onclick="switchScreen('main-menu')" title="Kembali ke Menu Utama" aria-label="Kembali ke Menu Utama">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
                 <h2 class="lms-title">Video Pembelajaran</h2>
-                <div class="lms-progress-wrap">
-                    <span id="videoProgressLabel">Video 1 dari 8</span>
-                    <div class="lms-progress-track">
-                        <div class="lms-progress-fill" id="videoProgressFill" style="width:12.5%;"></div>
-                    </div>
-                </div>
             </div>
 
             <div class="lms-tabs" id="videoTabs"></div>
 
             <div class="lms-content" id="videoContent"></div>
-
-            <div class="lms-nav">
-                <button type="button" class="lms-nav-btn" id="videoPrevBtn">‹ Sebelumnya</button>
-                <button type="button" class="lms-nav-btn lms-nav-btn-primary" id="videoNextBtn">Selanjutnya ›</button>
-            </div>
-
-            <button type="button" onclick="switchScreen('main-menu')" style="margin-top:14px;">Kembali ke Menu Utama</button>
         </div>
     </div>
 

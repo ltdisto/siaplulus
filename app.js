@@ -345,23 +345,15 @@ function waitForCameraVideoThenHideOverlay() {
                 console.log('[AR-DEBUG] canvas sudah punya ukuran valid, TIDAK perlu resize.');
             }
 
-            // FIX BARU: elemen <video> (sumber gambar kamera) konsisten berukuran
-            // 0x0 (style inline width/height:0px) di setiap pengecekan sebelumnya.
-            // Kalau canvas ternyata TRANSPARAN (bukan menggambar video sebagai
-            // tekstur, melainkan video tampil langsung lewat DOM biasa di belakang
-            // canvas), video 0x0 = tidak ada apa pun yang bisa terlihat sama sekali,
-            // walau data video-nya sendiri sudah "siap". Paksa video full-screen.
-            const videoElNow = sceneElNow.querySelector('video') || document.querySelector('#ar-screen video');
-            if (videoElNow) {
-                console.log('[AR-DEBUG] video style SEBELUM dipaksa:', videoElNow.style.width, videoElNow.style.height, videoElNow.style.zIndex);
-                videoElNow.style.width = '100vw';
-                videoElNow.style.height = '100vh';
-                videoElNow.style.objectFit = 'cover';
-                console.log('[AR-DEBUG] video style SESUDAH dipaksa:', videoElNow.style.width, videoElNow.style.height);
-                console.log('[AR-DEBUG] video.videoWidth asli (resolusi native kamera):', videoElNow.videoWidth, 'x', videoElNow.videoHeight);
-            } else {
-                console.log('[AR-DEBUG] videoElNow tidak ditemukan saat selesaikan().');
-            }
+            // CATATAN: sebelumnya di sini ada kode yang memaksa elemen <video>
+            // berukuran 100vw/100vh setiap marker terdeteksi — ini peninggalan
+            // debug lama sebelum akar masalah AR sesungguhnya (scene disuntik
+            // dinamis) ditemukan. Kode itu TERBUKTI menyebabkan bug baru:
+            // bentrok dengan logika ukuran video milik MindAR sendiri (yang
+            // juga terus-menerus menyesuaikan ukuran video secara internal),
+            // menghasilkan garis/kotak biru aneh yang muncul sesekali (race
+            // condition antara kedua sistem yang saling menimpa). Sudah dihapus
+            // — video sekarang dibiarkan diatur murni oleh MindAR sendiri.
 
             // Cek susulan 500ms kemudian — kalau-kalau ada proses lain (mis. MindAR
             // sendiri) yang menimpa balik ukuran canvas jadi 0 setelah kita perbaiki.
@@ -1382,14 +1374,6 @@ function renderMateriContent() {
         </div>
     `;
     contentEl.scrollTop = 0;
-
-    document.getElementById('lmsProgressLabel').textContent = `Dimensi ${d.no} dari ${MATERI_DIMENSI.length}`;
-    document.getElementById('lmsProgressFill').style.width = `${(d.no / MATERI_DIMENSI.length) * 100}%`;
-
-    const prevBtn = document.getElementById('lmsPrevBtn');
-    const nextBtn = document.getElementById('lmsNextBtn');
-    prevBtn.disabled = materiIndexAktif === 0;
-    nextBtn.textContent = materiIndexAktif === MATERI_DIMENSI.length - 1 ? 'Selesai ✓' : 'Selanjutnya ›';
 }
 
 function pilihMateriDimensi(index) {
@@ -1495,14 +1479,6 @@ function renderVideoContent() {
         </div>
     `;
     contentEl.scrollTop = 0;
-
-    document.getElementById('videoProgressLabel').textContent = `Video ${d.no} dari ${VIDEO_DIMENSI.length}`;
-    document.getElementById('videoProgressFill').style.width = `${(d.no / VIDEO_DIMENSI.length) * 100}%`;
-
-    const prevBtn = document.getElementById('videoPrevBtn');
-    const nextBtn = document.getElementById('videoNextBtn');
-    prevBtn.disabled = videoIndexAktif === 0;
-    nextBtn.textContent = videoIndexAktif === VIDEO_DIMENSI.length - 1 ? 'Selesai ✓' : 'Selanjutnya ›';
 }
 
 function pilihVideoDimensi(index) {
@@ -1519,32 +1495,10 @@ function bukaVideo() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const prevBtn = document.getElementById('lmsPrevBtn');
-    const nextBtn = document.getElementById('lmsNextBtn');
-    if (prevBtn) prevBtn.addEventListener('click', () => {
-        if (materiIndexAktif > 0) pilihMateriDimensi(materiIndexAktif - 1);
-    });
-    if (nextBtn) nextBtn.addEventListener('click', () => {
-        if (typeof MATERI_DIMENSI === 'undefined') return;
-        if (materiIndexAktif < MATERI_DIMENSI.length - 1) {
-            pilihMateriDimensi(materiIndexAktif + 1);
-        } else {
-            switchScreen('main-menu');
-        }
-    });
-
-    const videoPrevBtn = document.getElementById('videoPrevBtn');
-    const videoNextBtn = document.getElementById('videoNextBtn');
-    if (videoPrevBtn) videoPrevBtn.addEventListener('click', () => {
-        if (videoIndexAktif > 0) pilihVideoDimensi(videoIndexAktif - 1);
-    });
-    if (videoNextBtn) videoNextBtn.addEventListener('click', () => {
-        if (videoIndexAktif < VIDEO_DIMENSI.length - 1) {
-            pilihVideoDimensi(videoIndexAktif + 1);
-        } else {
-            switchScreen('main-menu');
-        }
-    });
+    // CATATAN: tombol Sebelumnya/Selanjutnya (lmsPrevBtn/lmsNextBtn,
+    // videoPrevBtn/videoNextBtn) sudah dihapus dari halaman Materi & Video —
+    // navigasi antar dimensi sekarang cukup lewat tab di atas (lmsTabs/
+    // videoTabs), lebih ringkas dan tidak memakan ruang baca.
 });
 let splashAutoTimerId = null;
 let splashSudahPindah = false;
