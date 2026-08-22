@@ -919,7 +919,7 @@ function siapkanDanRenderRekomendasi(data) {
         return;
     }
 
-    body.innerHTML = 'Menganalisis jawaban dengan AI, mohon tunggu...';
+    body.innerHTML = 'Menganalisis jawaban, mohon tunggu...';
 
     const dataSoalJawaban = data.jawaban.map(a => ({
         dimensi: a.dimensi,
@@ -937,7 +937,7 @@ function siapkanDanRenderRekomendasi(data) {
         .then(res => {
             if (res.result !== 'success') {
                 body.innerHTML = `
-                    <p>Gagal membuat rekomendasi AI: ${res.message || 'tidak diketahui'}</p>
+                    <p>Gagal membuat rekomendasi: ${res.message || 'tidak diketahui'}</p>
                     <button type="button" style="width:auto; padding:8px 16px;" onclick="cobaLagiRekomendasi()">Coba Lagi</button>
                 `;
                 return;
