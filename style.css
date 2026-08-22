@@ -593,6 +593,70 @@ input, textarea {
     transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
     text-align: center;
     min-height: 108px;
+    position: relative;
+}
+
+/* Badge nomor urutan langkah (1-6), pojok kiri atas tiap kartu — memperkuat
+   kesan alur belajar yang berurutan sesuai Petunjuk */
+.dashboard-step-no {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(201,169,97,0.18);
+    color: #C9A961;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.dashboard-step-no-gold {
+    background: rgba(10,38,71,0.25);
+    color: #0A2647;
+}
+
+/* Kartu Video — lebar penuh, jadi "jembatan" visual sebelum tombol emas
+   Mulai Asesmen, tata letak horizontal (ikon di kiri, label di kanan) */
+.dashboard-card-wide {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+    min-height: 64px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.dashboard-card-wide .dashboard-card-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.dashboard-card-wide .dashboard-card-label {
+    font-size: 14px;
+}
+
+/* Kartu Hasil Asesmen & Rekomendasi — sedikit dibedakan (outline saja, tanpa
+   fill solid) untuk menandakan ini langkah "setelah" asesmen selesai */
+.dashboard-card-outline {
+    background: transparent;
+    border: 1px solid rgba(201,169,97,0.35);
+    box-shadow: none;
+}
+
+.dashboard-card-outline:hover {
+    background: rgba(201,169,97,0.08);
+    box-shadow: none;
+}
+
+.dashboard-grid-hasil {
+    margin-top: 4px;
+    margin-bottom: 0;
 }
 
 .dashboard-card:hover {
@@ -631,7 +695,7 @@ input, textarea {
    di paling bawah dashboard */
 .dashboard-cta-asesmen {
     width: 100%;
-    margin: 4px 0 0 0;
+    margin: 4px 0 14px 0;
     padding: 18px 20px;
     background: linear-gradient(135deg, #E8D9B5 0%, #C9A961 100%);
     color: #0A2647;
@@ -645,6 +709,8 @@ input, textarea {
     justify-content: center;
     gap: 10px;
     box-shadow: 0 8px 22px rgba(201,169,97,0.35);
+    position: relative;
+    box-sizing: border-box;
     transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
