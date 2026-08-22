@@ -1248,6 +1248,198 @@ function simpanEditSoal() {
         });
 }
 
+// ================= EDITOR MATERI (Admin) =================
+let editorMateriCache = [];
+
+function loadEditorMateri() {
+    const container = document.getElementById('editorMateriList');
+    container.innerHTML = '<p>Memuat data...</p>';
+
+    fetch(urlScript + '?' + new URLSearchParams({ action: 'getMateri' }).toString())
+        .then(r => r.json())
+        .then(data => {
+            if (data.result !== 'success') {
+                container.innerHTML = `<p>Gagal memuat materi: ${data.message || 'tidak diketahui'}</p>`;
+                return;
+            }
+            editorMateriCache = data.data;
+            renderEditorMateriList();
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = '<p>Gagal memuat data. Cek koneksi internet.</p>';
+        });
+}
+
+function renderEditorMateriList() {
+    const container = document.getElementById('editorMateriList');
+    container.innerHTML = editorMateriCache.map(m => `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid rgba(201,169,97,0.2);">
+            <div style="flex:1; font-size:13px;">
+                <strong>${m.no}. ${m.judul}</strong><br>
+                <span style="color:#cbd5e1;">${m.deskripsi.length} paragraf deskripsi, ${m.aplikasi.length} paragraf aplikasi</span>
+            </div>
+            <button type="button" style="width:auto; padding:6px 12px; font-size:12px; margin:0;" onclick="bukaEditMateri(${m.no})">Edit</button>
+        </div>
+    `).join('') || '<p>Belum ada materi.</p>';
+}
+
+function bukaEditMateri(no) {
+    const materi = editorMateriCache.find(m => m.no === no);
+    if (!materi) {
+        alert('Materi tidak ditemukan.');
+        return;
+    }
+
+    document.getElementById('editMateriNo').value = materi.no;
+    document.getElementById('editMateriTitle').textContent = `Edit Materi — Dimensi ${materi.no}`;
+    document.getElementById('editMateriJudul').value = materi.judul;
+    document.getElementById('editMateriDeskripsi').value = materi.deskripsi.join('\n\n');
+    document.getElementById('editMateriAplikasi').value = materi.aplikasi.join('\n\n');
+
+    document.getElementById('editMateriModal').style.display = 'flex';
+}
+
+function simpanEditMateri() {
+    const no = document.getElementById('editMateriNo').value;
+    const judul = document.getElementById('editMateriJudul').value.trim();
+    const deskripsi = document.getElementById('editMateriDeskripsi').value.trim();
+    const aplikasi = document.getElementById('editMateriAplikasi').value.trim();
+
+    if (!judul || !deskripsi || !aplikasi) {
+        alert('Judul, deskripsi, dan aplikasi wajib diisi.');
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('action', 'updateMateri');
+    params.append('password', sessionStorage.getItem('admin_password') || '');
+    params.append('no', no);
+    params.append('judul', judul);
+    params.append('deskripsi', deskripsi);
+    params.append('aplikasi', aplikasi);
+
+    const btn = document.getElementById('btnSimpanMateri');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    fetch(urlScript, { method: 'POST', body: params })
+        .then(r => r.json())
+        .then(data => {
+            if (data.result === 'success') {
+                document.getElementById('editMateriModal').style.display = 'none';
+                loadEditorMateri();
+                materiSudahDimuat = false; // paksa reload data materi siswa di kunjungan berikutnya
+            } else {
+                alert(data.message || 'Gagal menyimpan perubahan.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Gagal menghubungi server.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Simpan Perubahan';
+        });
+}
+
+// ================= EDITOR VIDEO (Admin) =================
+let editorVideoCache = [];
+
+function loadEditorVideo() {
+    const container = document.getElementById('editorVideoList');
+    container.innerHTML = '<p>Memuat data...</p>';
+
+    fetch(urlScript + '?' + new URLSearchParams({ action: 'getVideo' }).toString())
+        .then(r => r.json())
+        .then(data => {
+            if (data.result !== 'success') {
+                container.innerHTML = `<p>Gagal memuat video: ${data.message || 'tidak diketahui'}</p>`;
+                return;
+            }
+            editorVideoCache = data.data;
+            renderEditorVideoList();
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = '<p>Gagal memuat data. Cek koneksi internet.</p>';
+        });
+}
+
+function renderEditorVideoList() {
+    const container = document.getElementById('editorVideoList');
+    container.innerHTML = editorVideoCache.map(v => `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid rgba(201,169,97,0.2);">
+            <div style="flex:1; font-size:13px;">
+                <strong>${v.no}. ${v.judul}</strong><br>
+                <span style="color:#cbd5e1;">youtu.be/${v.youtubeId}</span>
+            </div>
+            <button type="button" style="width:auto; padding:6px 12px; font-size:12px; margin:0;" onclick="bukaEditVideo(${v.no})">Edit</button>
+        </div>
+    `).join('') || '<p>Belum ada video.</p>';
+}
+
+function bukaEditVideo(no) {
+    const video = editorVideoCache.find(v => v.no === no);
+    if (!video) {
+        alert('Video tidak ditemukan.');
+        return;
+    }
+
+    document.getElementById('editVideoNo').value = video.no;
+    document.getElementById('editVideoTitle').textContent = `Edit Video — Dimensi ${video.no}`;
+    document.getElementById('editVideoJudul').value = video.judul;
+    document.getElementById('editVideoLink').value = `https://youtu.be/${video.youtubeId}`;
+    document.getElementById('editVideoDeskripsi').value = video.deskripsi;
+
+    document.getElementById('editVideoModal').style.display = 'flex';
+}
+
+function simpanEditVideo() {
+    const no = document.getElementById('editVideoNo').value;
+    const judul = document.getElementById('editVideoJudul').value.trim();
+    const youtubeId = document.getElementById('editVideoLink').value.trim();
+    const deskripsi = document.getElementById('editVideoDeskripsi').value.trim();
+
+    if (!judul || !youtubeId || !deskripsi) {
+        alert('Judul, link YouTube, dan deskripsi wajib diisi.');
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('action', 'updateVideo');
+    params.append('password', sessionStorage.getItem('admin_password') || '');
+    params.append('no', no);
+    params.append('judul', judul);
+    params.append('youtubeId', youtubeId);
+    params.append('deskripsi', deskripsi);
+
+    const btn = document.getElementById('btnSimpanVideo');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    fetch(urlScript, { method: 'POST', body: params })
+        .then(r => r.json())
+        .then(data => {
+            if (data.result === 'success') {
+                document.getElementById('editVideoModal').style.display = 'none';
+                loadEditorVideo();
+                videoSudahDimuat = false; // paksa reload data video siswa di kunjungan berikutnya
+            } else {
+                alert(data.message || 'Gagal menyimpan perubahan.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Gagal menghubungi server.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Simpan Perubahan';
+        });
+}
+
 // ================= CHATBOT AI (Tanya AI di Rekomendasi Hasil Asesmen) =================
 function bukaChatAI(index) {
     chatAktifUntuk = index;
@@ -1341,12 +1533,26 @@ function kirimPesanChat() {
         });
 }
 
-// ================= HALAMAN MATERI (LMS: tab/sidebar per dimensi) =================
+// ================= HALAMAN MATERI (LMS: tab per dimensi) — data di-fetch
+// dari Google Sheets (tab "Materi"), supaya Admin bisa edit lewat Editor
+// Materi dan perubahannya tersimpan permanen. =================
 let materiIndexAktif = 0;
+let MATERI_DIMENSI = [];
+let materiSudahDimuat = false;
+
+function loadMateriFromServer() {
+    return fetch(urlScript + '?' + new URLSearchParams({ action: 'getMateri' }).toString())
+        .then(r => r.json())
+        .then(data => {
+            if (data.result !== 'success') throw new Error(data.message || 'Gagal memuat materi');
+            MATERI_DIMENSI = data.data;
+            materiSudahDimuat = true;
+        });
+}
 
 function renderMateriTabs() {
     const tabsEl = document.getElementById('lmsTabs');
-    if (!tabsEl || typeof MATERI_DIMENSI === 'undefined') return;
+    if (!tabsEl) return;
     tabsEl.innerHTML = MATERI_DIMENSI.map((d, i) => `
         <button type="button" class="lms-tab ${i === materiIndexAktif ? 'lms-tab-active' : ''}" onclick="pilihMateriDimensi(${i})">
             ${d.no}. ${d.judul}
@@ -1356,8 +1562,9 @@ function renderMateriTabs() {
 
 function renderMateriContent() {
     const contentEl = document.getElementById('lmsContent');
-    if (!contentEl || typeof MATERI_DIMENSI === 'undefined') return;
+    if (!contentEl) return;
     const d = MATERI_DIMENSI[materiIndexAktif];
+    if (!d) { contentEl.innerHTML = '<p>Materi tidak ditemukan.</p>'; return; }
 
     const deskripsiHtml = d.deskripsi.map(p => `<p>${p}</p>`).join('');
     const aplikasiHtml = d.aplikasi.map(p => `<p>${p}</p>`).join('');
@@ -1385,65 +1592,36 @@ function pilihMateriDimensi(index) {
 function bukaMateri() {
     materiIndexAktif = 0;
     switchScreen('materi-screen');
-    renderMateriTabs();
-    renderMateriContent();
+    const contentEl = document.getElementById('lmsContent');
+    if (contentEl) contentEl.innerHTML = '<p>Memuat materi...</p>';
+
+    const pastikanTerload = materiSudahDimuat ? Promise.resolve() : loadMateriFromServer();
+    pastikanTerload
+        .then(() => {
+            renderMateriTabs();
+            renderMateriContent();
+        })
+        .catch(err => {
+            console.error(err);
+            if (contentEl) contentEl.innerHTML = '<p>Gagal memuat materi dari server. Coba lagi nanti.</p>';
+        });
 }
 
-// ================= HALAMAN VIDEO (LMS: tab per dimensi, embed YouTube) =================
-// CATATAN: link video dimensi ke-8 (Komunikasi) masih placeholder — ganti
-// "GANTI_ID_YOUTUBE_DIMENSI_8" begitu link-nya tersedia.
-const VIDEO_DIMENSI = [
-    {
-        no: 1,
-        judul: "Keimanan dan Ketakwaan terhadap Tuhan YME",
-        deskripsi: "Video ini membahas bagaimana keimanan dan ketakwaan tercermin dalam sikap dan perilaku sehari-hari siswa di lingkungan sekolah.",
-        youtubeId: "adYsVGq-_v0",
-    },
-    {
-        no: 2,
-        judul: "Kewargaan",
-        deskripsi: "Video ini menjelaskan pentingnya rasa cinta tanah air, kepedulian sosial, dan tanggung jawab sebagai warga negara yang baik.",
-        youtubeId: "xHa_94FU5M0",
-    },
-    {
-        no: 3,
-        judul: "Penalaran Kritis",
-        deskripsi: "Video ini mengajak siswa memahami cara berpikir kritis dan sistematis dalam menghadapi berbagai persoalan.",
-        youtubeId: "TBdlVatSVzk",
-    },
-    {
-        no: 4,
-        judul: "Kreativitas",
-        deskripsi: "Video ini menunjukkan bagaimana kreativitas dapat dikembangkan melalui inovasi dan pemecahan masalah secara out-of-the-box.",
-        youtubeId: "JwZksMFm_4w",
-    },
-    {
-        no: 5,
-        judul: "Kolaborasi",
-        deskripsi: "Video ini membahas pentingnya kerja sama tim dan komunikasi efektif dalam menyelesaikan tugas bersama.",
-        youtubeId: "UfSF_Hy9_fc",
-    },
-    {
-        no: 6,
-        judul: "Kemandirian",
-        deskripsi: "Video ini menjelaskan bagaimana sikap mandiri dan bertanggung jawab dapat dibangun sejak dini di lingkungan sekolah.",
-        youtubeId: "aHyWzKT3dO4",
-    },
-    {
-        no: 7,
-        judul: "Kesehatan",
-        deskripsi: "Video ini membahas pentingnya menjaga kesehatan fisik dan mental sebagai bagian dari gaya hidup siswa yang seimbang.",
-        youtubeId: "-fXQHUhFBZE",
-    },
-    {
-        no: 8,
-        judul: "Komunikasi",
-        deskripsi: "Video ini menjelaskan pentingnya kemampuan berkomunikasi yang baik, jelas, dan santun dalam kehidupan sehari-hari.",
-        youtubeId: "zWpByZwdJzw",
-    },
-];
-
+// ================= HALAMAN VIDEO (LMS: tab per dimensi, embed YouTube) —
+// data di-fetch dari Google Sheets (tab "Video"), sama seperti Materi. =================
 let videoIndexAktif = 0;
+let VIDEO_DIMENSI = [];
+let videoSudahDimuat = false;
+
+function loadVideoFromServer() {
+    return fetch(urlScript + '?' + new URLSearchParams({ action: 'getVideo' }).toString())
+        .then(r => r.json())
+        .then(data => {
+            if (data.result !== 'success') throw new Error(data.message || 'Gagal memuat video');
+            VIDEO_DIMENSI = data.data;
+            videoSudahDimuat = true;
+        });
+}
 
 function renderVideoTabs() {
     const tabsEl = document.getElementById('videoTabs');
@@ -1459,6 +1637,7 @@ function renderVideoContent() {
     const contentEl = document.getElementById('videoContent');
     if (!contentEl) return;
     const d = VIDEO_DIMENSI[videoIndexAktif];
+    if (!d) { contentEl.innerHTML = '<p>Video tidak ditemukan.</p>'; return; }
 
     const embedSrc = d.youtubeId && !d.youtubeId.startsWith('GANTI_')
         ? `https://www.youtube.com/embed/${d.youtubeId}`
@@ -1490,8 +1669,19 @@ function pilihVideoDimensi(index) {
 function bukaVideo() {
     videoIndexAktif = 0;
     switchScreen('video-screen');
-    renderVideoTabs();
-    renderVideoContent();
+    const contentEl = document.getElementById('videoContent');
+    if (contentEl) contentEl.innerHTML = '<p>Memuat video...</p>';
+
+    const pastikanTerload = videoSudahDimuat ? Promise.resolve() : loadVideoFromServer();
+    pastikanTerload
+        .then(() => {
+            renderVideoTabs();
+            renderVideoContent();
+        })
+        .catch(err => {
+            console.error(err);
+            if (contentEl) contentEl.innerHTML = '<p>Gagal memuat video dari server. Coba lagi nanti.</p>';
+        });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1584,6 +1774,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnTambahSekolah) btnTambahSekolah.addEventListener('click', tambahSekolah);
         const btnSimpanSoal = document.getElementById('btnSimpanSoal');
         if (btnSimpanSoal) btnSimpanSoal.addEventListener('click', simpanEditSoal);
+        const btnSimpanMateri = document.getElementById('btnSimpanMateri');
+        if (btnSimpanMateri) btnSimpanMateri.addEventListener('click', simpanEditMateri);
+        const btnSimpanVideo = document.getElementById('btnSimpanVideo');
+        if (btnSimpanVideo) btnSimpanVideo.addEventListener('click', simpanEditVideo);
 
     } catch (err) {
         console.error('Error saat inisialisasi:', err);
